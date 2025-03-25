@@ -250,6 +250,67 @@ static const char * const SHADER_POST_FS_CRT = SHADER_SOURCE(
 	uniform sampler2D texture;
 	uniform vec2 screen_size;
 
+	float FXAA_REDUCE_MIN = (1.0/ 128.0);
+	float FXAA_REDUCE_MUL = (1.0 / 8.0);
+	float FXAA_SPAN_MAX   = 8.0;
+
+	//optimized version for mobile, where dependent 
+	//texture reads can be a bottleneck
+	vec4 fxaa(sampler2D tex, vec2 fragCoord, vec2 resolution,
+		    vec2 v_rgbNW, vec2 v_rgbNE, 
+		    vec2 v_rgbSW, vec2 v_rgbSE, 
+		    vec2 v_rgbM) {
+	    vec4 color;
+	    vec2 inverseVP = vec2(1.0 / resolution.x, 1.0 / resolution.y);
+	    vec3 rgbNW = texture2D(tex, v_rgbNW).xyz;
+	    vec3 rgbNE = texture2D(tex, v_rgbNE).xyz;
+	    vec3 rgbSW = texture2D(tex, v_rgbSW).xyz;
+	    vec3 rgbSE = texture2D(tex, v_rgbSE).xyz;
+	    vec4 texColor = texture2D(tex, v_rgbM);
+	    vec3 rgbM  = texColor.xyz;
+	    vec3 luma = vec3(0.299, 0.587, 0.114);
+	    float lumaNW = dot(rgbNW, luma);
+	    float lumaNE = dot(rgbNE, luma);
+	    float lumaSW = dot(rgbSW, luma);
+	    float lumaSE = dot(rgbSE, luma);
+	    float lumaM  = dot(rgbM,  luma);
+	    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+	    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
+	    
+	    vec2 dir;
+	    dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
+	    dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));
+	    
+	    float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) *
+				  (0.25 * FXAA_REDUCE_MUL), FXAA_REDUCE_MIN);
+	    
+	    float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+	    dir = min(vec2(FXAA_SPAN_MAX, FXAA_SPAN_MAX),
+		      max(vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX),
+		      dir * rcpDirMin)) * inverseVP;
+	    
+	    vec3 rgbA = 0.5 * (
+		texture2D(tex, fragCoord * inverseVP + dir * (1.0 / 3.0 - 0.5)).xyz +
+		texture2D(tex, fragCoord * inverseVP + dir * (2.0 / 3.0 - 0.5)).xyz);
+	    vec3 rgbB = rgbA * 0.5 + 0.25 * (
+		texture2D(tex, fragCoord * inverseVP + dir * -0.5).xyz +
+		texture2D(tex, fragCoord * inverseVP + dir * 0.5).xyz);
+
+	    float lumaB = dot(rgbB, luma);
+	    if ((lumaB < lumaMin) || (lumaB > lumaMax))
+		color = vec4(rgbA, texColor.a);
+	    else
+		color = vec4(rgbB, texColor.a);
+		color = vec4(rgbB, texColor.a);
+	    return color;
+	}
+
+	float random(in vec2 st) {
+	    return fract(sin(dot(st.xy,
+				 vec2(12.9898,78.233)))
+			 * 43758.5453123);
+	}
+
 	vec2 curve(vec2 uv) {
 		uv = (uv - 0.5) * 2.0;
 		uv *= 1.1;	
@@ -261,37 +322,72 @@ static const char * const SHADER_POST_FS_CRT = SHADER_SOURCE(
 	}
 
 	void main(){
-		vec2 uv = curve(gl_FragCoord.xy / screen_size);
+		// vec2 uv = curve(gl_FragCoord.xy / screen_size);
+		vec2 uv = gl_FragCoord.xy / screen_size;
 		vec3 color;
+		vec3 color_clean;
 		float x =  sin(0.3*time+uv.y*21.0)*sin(0.7*time+uv.y*29.0)*sin(0.3+0.33*time+uv.y*31.0)*0.0017;
+		float pct = distance(uv,vec2(0.5));
+		
+		// vec4 fxaa(sampler2D tex, vec2 fragCoord, vec2 resolution,
+		// 	    vec2 v_rgbNW, vec2 v_rgbNE, 
+		// 	    vec2 v_rgbSW, vec2 v_rgbSE, 
+		// 	    vec2 v_rgbM) {
+		vec4 c = fxaa(texture, gl_FragCoord.xy, screen_size,
+			vec2(gl_FragCoord.x-1.0, gl_FragCoord.y+1.0),
+			vec2(gl_FragCoord.x+1.0, gl_FragCoord.y+1.0),
+			vec2(gl_FragCoord.x-1.0, gl_FragCoord.y-1.0),
+			vec2(gl_FragCoord.x+1.0, gl_FragCoord.y-1.0),
+			vec2(gl_FragCoord.x, gl_FragCoord.y)
+			);
+
+		// color_clean = texture2D(texture, uv).rgb;
+		color_clean = c.rgb;
 
 		color.r = texture2D(texture, vec2(x+uv.x+0.001,uv.y+0.001)).x+0.05;
 		color.g = texture2D(texture, vec2(x+uv.x+0.000,uv.y-0.002)).y+0.05;
 		color.b = texture2D(texture, vec2(x+uv.x-0.002,uv.y+0.000)).z+0.05;
-		color.r += 0.08*texture2D(texture, 0.75*vec2(x+0.025, -0.027)+vec2(uv.x+0.001,uv.y+0.001)).x;
-		color.g += 0.05*texture2D(texture, 0.75*vec2(x+-0.022, -0.02)+vec2(uv.x+0.000,uv.y-0.002)).y;
-		color.b += 0.08*texture2D(texture, 0.75*vec2(x+-0.02, -0.018)+vec2(uv.x-0.002,uv.y+0.000)).z;
+		color.r += 0.05*texture2D(texture, 0.75*vec2(x+0.025, -0.027)+vec2(uv.x+0.001,uv.y+0.001)).x;
+		color.g += 0.03*texture2D(texture, 0.75*vec2(x+-0.022, -0.02)+vec2(uv.x+0.000,uv.y-0.002)).y;
+		color.b += 0.05*texture2D(texture, 0.75*vec2(x+-0.02, -0.018)+vec2(uv.x-0.001,uv.y+0.000)).z;
 
-		color = clamp(color*0.6+0.4*color*color*1.0,0.0,1.0);
+		color = clamp(color*0.6+0.4*color*color*1.0,0.0,1.0); // what?
+
+		color = mix(color_clean, color, pow(pct, 0.5));
+		// color = color_clean;
+		// color.g = pow(pct, 0.5);
+		// color.g = pct;
 
 		float vignette = (0.0 + 1.0*16.0*uv.x*uv.y*(1.0-uv.x)*(1.0-uv.y));
-		color *= vec3(pow(vignette, 0.25));
+		color *= vec3(pow(vignette, 0.30));
 
-		color *= vec3(0.95,1.05,0.95);
-		color *= 2.8;
+		// color *= vec3(0.95,1.05,0.95);
+		color *= 1.2;
 
-		float scanlines = clamp( 0.35+0.35*sin(3.5*time+uv.y*screen_size.y*1.5), 0.0, 1.0);
-		
-		float s = pow(scanlines,1.7);
-		color = color * vec3(0.4+0.7*s);
+		//color manipulation
+		color = pow(color, vec3(1.1));
 
+		// color = smoothstep(0.0, 1.0, color);
+
+
+		// float scanlines = clamp( 0.35+0.35*sin(3.5*time+uv.y*screen_size.y*1.5), 0.0, 1.0);
+		// 
+		// float s = pow(scanlines,1.7);
+		// color = color * vec3(0.4+0.7*s);
+
+		//wavy?
 		color *= 1.0+0.01*sin(110.0*time);
 		if (uv.x < 0.0 || uv.x > 1.0)
 			color *= 0.0;
 		if (uv.y < 0.0 || uv.y > 1.0)
 			color *= 0.0;
 		
-		color*=1.0-0.65*vec3(clamp((mod(gl_FragCoord.x, 2.0)-1.0)*2.0,0.0,1.0));
+		// color*=1.0-0.65*vec3(clamp((mod(gl_FragCoord.x, 2.0)-1.0)*2.0,0.0,1.0));
+
+		//noise
+		color -= 0.03*random(vec2(uv.y*time/20.12345, uv.x*time));
+		color += 0.04*random(vec2(uv.x*time/5.54321, uv.y*time));
+
 		gl_FragColor = vec4(color,1.0);
 	}
 );
@@ -428,9 +524,11 @@ void render_init(vec2i_t screen_size) {
 
 	// Post Shaders
 
+	// FIXME: Why doesn't this work with set post effect CRT?
+	// Because of always reading the user settings?
 	prg_post_effects[RENDER_POST_NONE] = shader_post_default_init();
 	prg_post_effects[RENDER_POST_CRT] = shader_post_crt_init();
-	render_set_post_effect(RENDER_POST_NONE);
+	render_set_post_effect(RENDER_POST_CRT);
 
 	// Game shader
 
@@ -489,7 +587,7 @@ static mat4_t render_setup_3d_projection_mat(vec2i_t size) {
 	// view. For the original 4/3 aspect ratio this equates to a vertical fov
 	// of 73.75deg.
 	float aspect = (float)size.x / (float)size.y;
-	float fov = (73.75 / 180.0) * 3.14159265358;
+	float fov = (73.75 / 180.0) * 3.14159265358;//73.75
 	float f = 1.0 / tan(fov / 2);
 	float nf = 1.0 / (NEAR_PLANE - FAR_PLANE);
 	return mat4(

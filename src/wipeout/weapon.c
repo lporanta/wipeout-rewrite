@@ -637,7 +637,7 @@ void weapon_update_shield(weapon_t *self) {
 
 
 void weapon_fire_turbo(ship_t *ship) {
-	ship->velocity = vec3_add(ship->velocity, vec3_mulf(ship->dir_forward, 39321)); // unitVecNose.vx) << 3) * FR60) / 50
+	ship->velocity = vec3_add(ship->velocity, vec3_mulf(ship->dir_forward, 20000)); //39321 unitVecNose.vx) << 3) * FR60) / 50
 	
 	if (ship->pilot == g.pilot) {
 		sfx_t *sfx = sfx_play(SFX_MISSILE_FIRE);

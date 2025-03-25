@@ -186,12 +186,6 @@ void ships_draw(void) {
 	render_set_depth_write(true);
 }
 
-
-
-
-
-
-
 void ship_init(ship_t *self, section_t *section, int pilot, int inv_start_rank) {
 	self->pilot = pilot;
 	self->velocity = vec3(0, 0, 0);
@@ -296,10 +290,10 @@ void ship_init_exhaust_plume(ship_t *self) {
 				indices[indices_len++] = prm.ft3->coords[2];
 
 				flags_add(prm.ft3->flag, PRM_TRANSLUCENT);
-				prm.ft3->color.r = 180;
-				prm.ft3->color.g = 97 ;
-				prm.ft3->color.b = 120;
-				prm.ft3->color.a = 140;
+				prm.ft3->color.r = 240; // 180;
+				prm.ft3->color.g = 240; // 97 ;
+				prm.ft3->color.b = 240; // 120;
+				prm.ft3->color.a = 140; // 140;
 			}
 			prm.ft3 += 1;
 			break;
@@ -333,9 +327,9 @@ void ship_init_exhaust_plume(ship_t *self) {
 
 				flags_add(prm.gt3->flag, PRM_TRANSLUCENT);
 				for (int j = 0; j < 3; j++) {
-					prm.gt3->color[j].r = 180;
-					prm.gt3->color[j].g = 97 ;
-					prm.gt3->color[j].b = 120;
+					prm.gt3->color[j].r = 240;//180;
+					prm.gt3->color[j].g = 0;//97;
+					prm.gt3->color[j].b = 240;//120;
 					prm.gt3->color[j].a = 140;
 				}
 			}
@@ -538,12 +532,13 @@ void ship_update(ship_t *self) {
 
 	if (self->pilot == g.pilot) {
 		// get the z exhaust_len related to speed or thrust
-		exhaust_len = self->thrust_mag * 0.0625;
-		exhaust_len += self->speed * 0.00390625;
+		exhaust_len = self->thrust_mag * 0.02; //0.0625
+		// exhaust_len += self->speed * 0.001; //0.00390625;
+		exhaust_len += clamp(vec3_len(self->thrust) * 0.0001, 0.0, 0.002); //0.00390625;
 	}
 	else {
 		// for remote ships the z exhaust_len is a constant
-		exhaust_len = 150;
+		exhaust_len = 50; //150
 	}
 
 	for (int i = 0; i < 3; i++) {
@@ -606,7 +601,6 @@ vec3_t ship_cockpit(ship_t *self) {
 
 vec3_t ship_nose(ship_t *self) {
 	return vec3_add(self->position, vec3_mulf(self->dir_forward, 512));
-	
 }
 
 vec3_t ship_wing_left(ship_t *self) {
@@ -987,7 +981,6 @@ void ship_collide_with_ship(ship_t *self, ship_t *other) {
 	}
 
 	// Ships did collide, resolve
-
 	vec3_t vc = vec3_divf(
 		vec3_add(
 			vec3_mulf(self->velocity, self->mass),

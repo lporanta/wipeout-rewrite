@@ -265,6 +265,7 @@ void track_draw(camera_t *camera) {
 	// behind. Ideally we'd want to do a full frustum culling here. FIXME.
 	vec3_t cam_pos = camera->position;
 	vec3_t cam_dir = camera_forward(camera);
+	// cam_pos = vec3_add(cam_pos, vec3_mulf(cam_dir, 1500.0)); // HACK TO DRAW LESS IN FRONT OF THE CAM, FIXME
 	
 	int drawn = 0;
 	int skipped = 0;

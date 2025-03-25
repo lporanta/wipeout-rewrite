@@ -32,20 +32,35 @@ const struct {
 	.width = 121,
 	.skew = 2,
 	.bars = {
-		{{.x =   6, .y = 12}, .height = 10, .color = rgba( 66,  16,  49, 255)},
-		{{.x =  13, .y = 12}, .height = 10, .color = rgba(115,  33,  90, 255)},
-		{{.x =  20, .y = 12}, .height = 10, .color = rgba(132,  58, 164, 255)},
-		{{.x =  27, .y = 12}, .height = 10, .color = rgba( 99,  90, 197, 255)},
-		{{.x =  34, .y = 12}, .height = 10, .color = rgba( 74, 148, 181, 255)},
-		{{.x =  41, .y = 12}, .height = 10, .color = rgba( 66, 173, 115, 255)},
-		{{.x =  50, .y = 10}, .height = 12, .color = rgba( 99, 206,  58, 255)},
-		{{.x =  59, .y =  8}, .height = 12, .color = rgba(189, 206,  41, 255)},
-		{{.x =  69, .y =  5}, .height = 13, .color = rgba(247, 140,  33, 255)},
-		{{.x =  81, .y =  2}, .height = 15, .color = rgba(255, 197,  49, 255)},
-		{{.x =  95, .y =  1}, .height = 16, .color = rgba(255, 222, 115, 255)},
-		{{.x = 110, .y =  1}, .height = 16, .color = rgba(255, 239, 181, 255)},
-		{{.x = 126, .y =  1}, .height = 16, .color = rgba(255, 255, 255, 255)}
+		{{.x =   6, .y = 12}, .height = 10, .color = rgba(192,8,94,255)},
+		{{.x =  13, .y = 12}, .height = 10, .color = rgba(192,8,94,255)},
+		{{.x =  20, .y = 12}, .height = 10, .color = rgba(192,8,94,255)},
+		{{.x =  27, .y = 12}, .height = 10, .color = rgba(192,8,94,255)},
+		{{.x =  34, .y = 12}, .height = 10, .color = rgba(192,8,94,255)},
+		{{.x =  41, .y = 12}, .height = 10, .color = rgba(192,8,94,255)},
+		{{.x =  50, .y = 10}, .height = 12, .color = rgba(192,8,94,255)},
+		{{.x =  59, .y =  8}, .height = 12, .color = rgba(192,8,94,255)},
+		{{.x =  69, .y =  5}, .height = 13, .color = rgba(192,8,94,255)},
+		{{.x =  81, .y =  2}, .height = 15, .color = rgba(192,8,94,255)},
+		{{.x =  95, .y =  1}, .height = 16, .color = rgba(192,8,94,255)},
+		{{.x = 110, .y =  1}, .height = 16, .color = rgba(192,8,94,255)},
+		{{.x = 126, .y =  1}, .height = 16, .color = rgba(192,8,94,255)},
 	}
+	// .bars = {
+	// 	{{.x =   6, .y = 12}, .height = 10, .color = rgba( 66,  16,  49, 255)},
+	// 	{{.x =  13, .y = 12}, .height = 10, .color = rgba(115,  33,  90, 255)},
+	// 	{{.x =  20, .y = 12}, .height = 10, .color = rgba(132,  58, 164, 255)},
+	// 	{{.x =  27, .y = 12}, .height = 10, .color = rgba( 99,  90, 197, 255)},
+	// 	{{.x =  34, .y = 12}, .height = 10, .color = rgba( 74, 148, 181, 255)},
+	// 	{{.x =  41, .y = 12}, .height = 10, .color = rgba( 66, 173, 115, 255)},
+	// 	{{.x =  50, .y = 10}, .height = 12, .color = rgba( 99, 206,  58, 255)},
+	// 	{{.x =  59, .y =  8}, .height = 12, .color = rgba(189, 206,  41, 255)},
+	// 	{{.x =  69, .y =  5}, .height = 13, .color = rgba(247, 140,  33, 255)},
+	// 	{{.x =  81, .y =  2}, .height = 15, .color = rgba(255, 197,  49, 255)},
+	// 	{{.x =  95, .y =  1}, .height = 16, .color = rgba(255, 222, 115, 255)},
+	// 	{{.x = 110, .y =  1}, .height = 16, .color = rgba(255, 239, 181, 255)},
+	// 	{{.x = 126, .y =  1}, .height = 16, .color = rgba(255, 255, 255, 255)}
+	// }
 };
 
 static uint16_t speedo_facia_texture;

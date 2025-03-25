@@ -40,23 +40,77 @@ void camera_update(camera_t *camera, ship_t *ship, droid_t *droid) {
 }
 
 void camera_update_race_external(camera_t *camera, ship_t *ship, droid_t *droid) {
-	vec3_t pos = vec3_sub(ship->position, vec3_mulf(ship->dir_forward, 1024));
-	pos.y -= 200;
-	camera->section = track_nearest_section(pos, vec3(1,1,1), camera->section, NULL);
-	section_t *next = camera->section->next;
-
-	vec3_t target = vec3_project_to_ray(pos, next->center, camera->section->center);
-
-	vec3_t diff_from_center = vec3_sub(pos, target);
-	vec3_t acc = diff_from_center;
-	acc.y += vec3_len(diff_from_center) * 0.5;
+	// This is kind of an ok camera
+	// float speed_factor = clamp(1.0-(vec3_len(ship->velocity)/120000.0), 0.0, 1.0);
+	// vec3_t pos = vec3_sub(ship->position, vec3_mulf(ship->dir_forward, 970*speed_factor));//1024
+	// pos.y -= 360;
+	//
+	// camera->section = track_nearest_section(pos, vec3(1,1,1), camera->section, NULL);
+	// // angle x is up and down
+	// // angle y is left and right but glitches
+	// camera->position = vec3_lerp(camera->position, pos, 0.4);
+	// camera->angle = vec3(lerp(camera->angle.x, ship->angle.x, 0.4), ship->angle.y, clamp(lerp(camera->angle.z, ship->angle.z, 0.01), -0.1, 0.1));
 	
-	camera->velocity = vec3_sub(camera->velocity, vec3_mulf(acc, 0.015625 * 30 * system_tick()));
-	camera->velocity = vec3_sub(camera->velocity, vec3_mulf(camera->velocity, 0.125 * 30 * system_tick()));
-	pos = vec3_add(pos, camera->velocity);
+	// vec3_t pos = vec3_sub(ship->position, vec3_mulf(ship->dir_forward, 920));//1024
+	vec3_t pos = vec3_sub(ship->position, vec3_mulf(ship->dir_forward, 900 + fabs(ship->angle.z)*100.0 + ship->angle.x*200.0));//1024
+	pos.y -= 360 + fabs(ship->angle.z)*200.0; // HACK, FIXME
+	printf("ship->angle.z: %f\n", ship->angle.z);
+	printf("pos.y: %f\n", pos.y);
+	// pos = vec3_add(pos, vec3_mulf(ship->dir_up, 400));
+	// pos = vec3_add(pos, vec3_mulf(ship->dir_up, 400-abs(ship->angle.z)*512.0));
+	// vec3_t pos_rshift = vec3_add(pos, vec3_mulf(ship->dir_right, ship->brake_right*2.0));
+	// vec3_t pos_lshift = vec3_sub(pos, vec3_mulf(ship->dir_right, ship->brake_left*2.0));
+	// vec3_t pos_shift = vec3_mulf(vec3_add(pos_rshift, pos_lshift),0.5);
+	vec3_t pos_shift = vec3_sub(pos, vec3_mulf(ship->dir_right, ship->angle.z*512.0));
+	// pos_shift = vec3_add(pos_shift, vec3_mulf(ship->dir_right, (ship->brake_right-ship->brake_left)*0.5));
+	// pos_shift = vec3_add(pos_shift, vec3_mulf(ship->dir_up, abs(ship->angle.z)*512.0));
+	camera->position = vec3_lerp(camera->position, pos_shift, 0.9);
+	// camera->position = vec3_lerp(camera->position, pos_shift, 0.6);
+	// camera->position = pos_shift;
 
-	camera->position = pos;
-	camera->angle = vec3(ship->angle.x, ship->angle.y, 0);
+	// if (vec3_len(ship->velocity)>1) {
+	// vec3_t dir_velocity = (vec3_len(ship->velocity)>0.0) ? vec3_normalize(ship->velocity) : ship->dir_forward;
+	// vec3_t pos1 = vec3_sub(ship->position, vec3_mulf(dir_velocity, 1024));
+	// pos1.y -= 360;
+	// camera->position = vec3_lerp(pos1, pos, 0.1);
+	//
+
+	// camera->angle = vec3_normalize(vec3_sub(pos, ship->position));
+	camera->angle.x = ship->angle.x - 0.1;
+	camera->angle.y = ship->angle.y;
+	// camera->angle.y = ship->angle.y + ship->brake_right*0.001 - ship->brake_left*0.001;
+	// camera->angle.z = ship->angle.z;
+	// camera->angle.z = clamp(lerp(camera->angle.z, ship->angle.z, 0.05), -0.1, 0.1);
+	camera->angle.z = lerp(camera->angle.z, ship->angle.z*0.1, 0.04);
+
+	// section_t *next = camera->section->next;
+	// vec3_t target = vec3_project_to_ray(pos, next->center, camera->section->center);
+	// vec3_t diff_from_center = vec3_sub(pos, target);
+	// vec3_t acc = diff_from_center;
+	// acc.y += vec3_len(diff_from_center) * 0.5;
+	// camera->velocity = vec3_sub(camera->velocity, vec3_mulf(acc, 0.015625 * 30 * system_tick()));
+	// camera->velocity = vec3_sub(camera->velocity, vec3_mulf(camera->velocity, 0.125 * 30 * system_tick()));
+
+	// vec3_t pos2 = pos;
+	// pos2 = vec3_add(pos, camera->velocity);
+
+	// some dumb begin race animation
+	// pos.x += sin(( ship->update_timer * 2.5 * M_PI * 2) / 2.0) * 2;
+	// pos.y -= sin(( ship->update_timer * 1.0 * M_PI * 2) / 2.0) * 2;
+	// pos.z += sin(( ship->update_timer * 1.5 * M_PI * 2) / 2.0) * 2;
+
+	// camera->position = vec3_mulf(vec3_add(pos, pos2), 0.5);
+	// camera->position = vec3_lerp(pos, pos2, speed_factor*speed_factor);
+	// camera->position = vec3_mulf(vec3_add(camera->position, pos), 0.5);
+	
+	// vec3_t diff_from_ship = vec3_sub(pos, ship->position);
+	// vec3_t acc = diff_from_ship;
+	// acc.y += vec3_len(diff_from_ship) * 1.0;
+	// camera->velocity = vec3_sub(camera->velocity, vec3_mulf(acc, 0.015625 * 30 * system_tick()));
+	// camera->velocity = vec3_sub(camera->velocity, vec3_mulf(camera->velocity, 0.125 * 30 * system_tick()));
+	// 
+	// pos = vec3_add(pos, camera->velocity);
+	// camera->position = pos;
 }
 
 void camera_update_race_internal(camera_t *camera, ship_t *ship, droid_t *droid) {

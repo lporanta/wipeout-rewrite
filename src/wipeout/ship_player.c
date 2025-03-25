@@ -239,6 +239,11 @@ void ship_player_update_race(ship_t *self) {
 	// Brake
 	if (input_state(A_BRAKE_RIGHT))	{
 		self->brake_right += SHIP_BRAKE_RATE * system_tick();
+		// if (flags_is(self->flags, SHIP_FLYING)) {
+		// }
+		// self->angular_acceleration.z = -1000.0;
+		// self->acceleration.y = vec3_add(self->acceleration, vec3_divf(force, self->mass));
+		// self->position = vec3_add(self->position, vec3(200.0, 0, 0));
 	}
 	else if (self->brake_right > 0) {
 		self->brake_right -= SHIP_BRAKE_RATE * system_tick();
@@ -345,16 +350,15 @@ void ship_player_update_race(ship_t *self) {
 				self->last_impact_time = 0;
 				sfx_play_at(SFX_IMPACT, self->position, vec3(0,0,0), 1);
 			}
-			self->velocity = vec3_reflect(self->velocity, face->normal, 2);
-			self->velocity = vec3_sub(self->velocity, vec3_mulf(self->velocity, 0.125));
-			self->velocity = vec3_sub(self->velocity, face->normal);
-		}
-		else if (height < 30) {
-			self->velocity = vec3_add(self->velocity, vec3_mulf(face->normal, 4096.0 * 30 * system_tick()));
+			// self->velocity = vec3_sub(self->velocity, vec3_mulf(self->velocity, 0.000125));
+			// self->velocity = vec3_sub(self->velocity, face->normal);
 		}
 
-		if (height < 50) {
-			height = 50;
+		if (height < 80) {
+			// float factor = 1.0-clamp(height/50.0, 0.0, 1.0);
+			// self->velocity = vec3_reflect(self->velocity, face->normal, 1.0*factor);
+			self->velocity = vec3_reflect(self->velocity, face->normal, 1.0);
+			height = 80;
 		}
 
 		// Calculate acceleration
@@ -454,6 +458,8 @@ void ship_player_update_race(ship_t *self) {
 	self->angle.y += brake_dir * self->speed * 0.000030517578125 * M_PI * 2 * 30 * system_tick();
 
 	self->angle = vec3_add(self->angle, vec3_mulf(self->angular_velocity, system_tick()));
+	// barrel roll?
+	// self->angle.z -= system_tick();
 	self->angle.z -= self->angle.z * 0.125 * 30 * system_tick();
 	self->angle = vec3_wrap_angle(self->angle);
 
