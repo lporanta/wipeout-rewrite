@@ -32,16 +32,28 @@ void system_exit(void) {
 void system_update(void) {
 	double time_real_now = platform_now();
 	double real_delta = time_real_now - time_real;
+	// if (real_delta < 1.0 / 30.0) {
+	// 	return;
+	// }
 	time_real = time_real_now;
 	tick_last = min(real_delta, 0.1) * time_scale;
 	time_scaled += tick_last;
 
+	// printf("time_real: %f\n", time_real);
+	// printf("time_scaled: %f\n", time_scaled);
+	// printf("time_scale: %f\n", time_scale );
+	// printf("tick_last: %f\n", tick_last);
+	// printf("cycle_time: %f\n", cycle_time);
+
 	// FIXME: come up with a better way to wrap the cycle_time, so that it
-	// doesn't lose precission, but also doesn't jump upon reset.
+	// doesn't lose precision, but also doesn't jump upon reset.
 	cycle_time = time_scaled;
 	if (cycle_time > 3600 * M_PI) {
 		cycle_time -= 3600 * M_PI;
 	}
+
+	// render_set_resolution(RENDER_RES_NATIVE); //testing
+	// render_set_projection_fov(90.0 + (uint)system_time() % 30); //testing
 	
 	render_frame_prepare();
 	

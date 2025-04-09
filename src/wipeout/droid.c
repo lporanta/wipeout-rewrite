@@ -25,8 +25,15 @@ void droid_load(void) {
 void droid_init(droid_t *droid, ship_t *ship) {
 	droid->section = g.track.sections;
 
+	// detect loop, start possibly always 0 so could be simplified
+	int droid_start_section = droid->section->num;
 	while (flags_not(droid->section->flags, SECTION_JUMP)) {
 		droid->section = droid->section->next;
+		// printf("droid section: %d\n", droid->section->num);
+		// check if droid did a full lap
+		if (droid->section->num == droid_start_section) {
+			break;
+		}
 	}
 
 	droid->position = vec3_add(ship->position, vec3(0, -200, 0));
@@ -253,8 +260,13 @@ void droid_update_rescue(droid_t *droid, ship_t *ship) {
 		droid->update_func = droid_update_idle;
 		droid->update_timer = DROID_UPDATE_TIME_INITIAL;
 
+		int droid_start_section = droid->section->num;
 		while (flags_not(droid->section->flags, SECTION_JUMP)) {
 			droid->section = droid->section->prev;
+			// check if droid did a full lap
+			if (droid->section->num == droid_start_section) {
+				break;
+			}
 		}
 	}
 }

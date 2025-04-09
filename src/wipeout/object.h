@@ -116,8 +116,6 @@ typedef struct GT4 {
 } GT4;
 
 
-
-
 /* LIGHT SOURCED POLYGONS
 */
 
@@ -228,10 +226,6 @@ typedef struct LSGT4 {
 } LSGT4;
 
 
-
-
-
-
 /* OTHER PRIMITIVE TYPES
 */
 typedef struct SPR {
@@ -244,7 +238,6 @@ typedef struct SPR {
 	rgba_t color;
 } SPR;
 
-
 typedef struct Spline {
 	int16_t type; // Type of primitive
 	int16_t flag;
@@ -254,7 +247,6 @@ typedef struct Spline {
 	rgba_t color;
 } Spline;
 
-
 typedef struct PointLight {
 	int16_t type;
 	int16_t flag;
@@ -263,7 +255,6 @@ typedef struct PointLight {
 	int16_t startFalloff;
 	int16_t endFalloff;
 } PointLight;
-
 
 typedef struct SpotLight {
 	int16_t type;
@@ -277,7 +268,6 @@ typedef struct SpotLight {
 	int16_t spreadAngle;
 } SpotLight;
 
-
 typedef struct InfiniteLight {
 	int16_t type;
 	int16_t flag;
@@ -286,17 +276,11 @@ typedef struct InfiniteLight {
 } InfiniteLight;
 
 
-
-
-
-
 // PRIMITIVE FLAGS
 
 #define PRM_SINGLE_SIDED 0x0001
 #define PRM_SHIP_ENGINE  0x0002
 #define PRM_TRANSLUCENT  0x0004
-
-
 
 #define PRM_TYPE_F3               1
 #define PRM_TYPE_FT3              2
@@ -380,5 +364,6 @@ typedef union Prm {
 
 Object *objects_load(char *name, texture_list_t tl);
 void object_draw(Object *object, mat4_t *mat);
+void object_draw_colored(Object *object, mat4_t *mat, rgba_t color);
 
 #endif

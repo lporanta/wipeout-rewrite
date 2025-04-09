@@ -374,7 +374,7 @@ void weapon_update_mine(weapon_t *self) {
 		return;
 	}
 
-	// TODO: oscilate perpendicular to track!?
+	// TODO: oscillate perpendicular to track!?
 	self->angle.y += system_tick();
 
 	ship_t *ship = weapon_collides_with_ship(self);
@@ -385,6 +385,7 @@ void weapon_update_mine(weapon_t *self) {
 			if (ship->pilot == g.pilot) {
 				ship->velocity = vec3_sub(ship->velocity, vec3_mulf(ship->velocity, 0.125));
 				// SetShake(20); // FIXME
+				camera_add_shake(&g.camera, 0.2);
 			}
 			else {
 				ship->speed = ship->speed * 0.125;
@@ -392,7 +393,6 @@ void weapon_update_mine(weapon_t *self) {
 		}
 	}	
 }
-
 
 void weapon_fire_missile(ship_t *ship) {
 	weapon_t *self = weapon_init(ship);
@@ -435,6 +435,7 @@ void weapon_update_missile(weapon_t *self) {
 				ship->angular_velocity.z += rand_float(-0.1, 0.1);
 				ship->turn_rate_from_hit = rand_float(-0.1, 0.1);
 				// SetShake(20);  // FIXME
+				camera_add_shake(&g.camera, 0.2);
 			}
 			else {
 				ship->speed = ship->speed * 0.03125;
@@ -483,6 +484,7 @@ void weapon_update_rocket(weapon_t *self) {
 				ship->angular_velocity.z += rand_float(-0.1, 0.1);;
 				ship->turn_rate_from_hit = rand_float(-0.1, 0.1);;
 				// SetShake(20);  // FIXME
+				camera_add_shake(&g.camera, 0.2);
 			}
 			else {
 				ship->speed = ship->speed * 0.03125;
@@ -567,7 +569,6 @@ void weapon_update_shield(weapon_t *self) {
 	}
 	self->angle = self->owner->angle;
 
-
 	Prm poly = {.primitive = self->model->primitives};
 	int primitives_len = self->model->primitives_len;
 	uint8_t col0, col1, col2, col3;
@@ -634,7 +635,6 @@ void weapon_update_shield(weapon_t *self) {
 		}
 	}
 }
-
 
 void weapon_fire_turbo(ship_t *ship) {
 	ship->velocity = vec3_add(ship->velocity, vec3_mulf(ship->dir_forward, 20000)); //39321 unitVecNose.vx) << 3) * FR60) / 50

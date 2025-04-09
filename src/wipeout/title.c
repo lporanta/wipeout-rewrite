@@ -12,7 +12,12 @@ static float start_time;
 static bool has_shown_attract = false;
 
 void title_init(void) {
-	title_image = image_get_texture("wipeout/textures/wiptitle.tim");
+	if (save.mode_2097) {
+		title_image = image_get_texture("wipeout2/textures/startpal.tim");
+	} 
+	else {
+		title_image = image_get_texture("wipeout/textures/wiptitle.tim");
+	}
 	start_time = system_time();
 	sfx_music_mode(SFX_MUSIC_RANDOM);
 }

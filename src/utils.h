@@ -36,10 +36,12 @@
 		__typeof__(v) _v = v, _min = min, _max = max; \
 		_v > _max ? _max : _v < _min ? _min : _v; \
 	})
+
 #define scale(v, in_min, in_max, out_min, out_max) ({ \
 		__typeof__(v) _in_min = in_min, _out_min = out_min; \
 		_out_min + ((out_max) - _out_min) * (((v) - _in_min) / ((in_max) - _in_min)); \
 	})
+
 #define lerp(a, b, t) ({ \
 		__typeof__(a) _a = a; \
 		_a + ((b) - _a) * (t); \

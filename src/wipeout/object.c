@@ -780,3 +780,331 @@ void object_draw(Object *object, mat4_t *mat) {
 		}
 	}
 }
+
+void object_draw_colored(Object *object, mat4_t *mat, rgba_t color) {
+	vec3_t *vertex = object->vertices;
+
+	Prm poly = {.primitive = object->primitives};
+	int primitives_len = object->primitives_len;
+
+	render_set_model_mat(mat);
+
+	// TODO: check for PRM_SINGLE_SIDED
+	// ship engine (wipeout1): FT3, GT3, and flag is PRM_SHIP_ENGINE
+
+	for (int i = 0; i < primitives_len; i++) {
+		int coord0;
+		int coord1;
+		int coord2;
+		int coord3;
+		switch (poly.primitive->type) {
+		case PRM_TYPE_GT3:
+			coord0 = poly.gt3->coords[0];
+			coord1 = poly.gt3->coords[1];
+			coord2 = poly.gt3->coords[2];
+
+			render_push_tris((tris_t) {
+				.vertices = {
+					{
+						.pos = vertex[coord2],
+						.uv = {poly.gt3->u2, poly.gt3->v2},
+						.color = flags_is(poly.gt3->flag, PRM_SHIP_ENGINE) ? poly.gt3->color[2] : color
+					},
+					{
+						.pos = vertex[coord1],
+						.uv = {poly.gt3->u1, poly.gt3->v1},
+						.color = flags_is(poly.gt3->flag, PRM_SHIP_ENGINE) ? poly.gt3->color[1] : color
+					},
+					{
+						.pos = vertex[coord0],
+						.uv = {poly.gt3->u0, poly.gt3->v0},
+						.color = flags_is(poly.gt3->flag, PRM_SHIP_ENGINE) ? poly.gt3->color[0] : color
+					},
+				}
+			}, poly.gt3->texture);
+
+			poly.gt3 += 1;
+			break;
+
+		case PRM_TYPE_GT4:
+			coord0 = poly.gt4->coords[0];
+			coord1 = poly.gt4->coords[1];
+			coord2 = poly.gt4->coords[2];
+			coord3 = poly.gt4->coords[3];
+
+			render_push_tris((tris_t) {
+				.vertices = {
+					{
+						.pos = vertex[coord2],
+						.uv = {poly.gt4->u2, poly.gt4->v2},
+						.color = color
+					},
+					{
+						.pos = vertex[coord1],
+						.uv = {poly.gt4->u1, poly.gt4->v1},
+						.color = color
+					},
+					{
+						.pos = vertex[coord0],
+						.uv = {poly.gt4->u0, poly.gt4->v0},
+						.color = color
+					},
+				}
+			}, poly.gt4->texture);
+			render_push_tris((tris_t) {
+				.vertices = {
+					{
+						.pos = vertex[coord2],
+						.uv = {poly.gt4->u2, poly.gt4->v2},
+						.color = color
+					},
+					{
+						.pos = vertex[coord3],
+						.uv = {poly.gt4->u3, poly.gt4->v3},
+						.color = color
+					},
+					{
+						.pos = vertex[coord1],
+						.uv = {poly.gt4->u1, poly.gt4->v1},
+						.color = color
+					},
+				}
+			}, poly.gt4->texture);
+
+			poly.gt4 += 1;
+			break;
+
+		case PRM_TYPE_FT3:
+			coord0 = poly.ft3->coords[0];
+			coord1 = poly.ft3->coords[1];
+			coord2 = poly.ft3->coords[2];
+
+			render_push_tris((tris_t) {
+				.vertices = {
+					{
+						.pos = vertex[coord2],
+						.uv = {poly.ft3->u2, poly.ft3->v2},
+						.color = flags_is(poly.ft3->flag, PRM_SHIP_ENGINE) ? poly.ft3->color : color
+					},
+					{
+						.pos = vertex[coord1],
+						.uv = {poly.ft3->u1, poly.ft3->v1},
+						.color = flags_is(poly.ft3->flag, PRM_SHIP_ENGINE) ? poly.ft3->color : color
+					},
+					{
+						.pos = vertex[coord0],
+						.uv = {poly.ft3->u0, poly.ft3->v0},
+						.color = flags_is(poly.ft3->flag, PRM_SHIP_ENGINE) ? poly.ft3->color : color
+					},
+				}
+			}, poly.ft3->texture);
+
+			poly.ft3 += 1;
+			break;
+
+		case PRM_TYPE_FT4:
+			coord0 = poly.ft4->coords[0];
+			coord1 = poly.ft4->coords[1];
+			coord2 = poly.ft4->coords[2];
+			coord3 = poly.ft4->coords[3];
+
+			render_push_tris((tris_t) {
+				.vertices = {
+					{
+						.pos = vertex[coord2],
+						.uv = {poly.ft4->u2, poly.ft4->v2},
+						.color = color
+					},
+					{
+						.pos = vertex[coord1],
+						.uv = {poly.ft4->u1, poly.ft4->v1},
+						.color = color
+					},
+					{
+						.pos = vertex[coord0],
+						.uv = {poly.ft4->u0, poly.ft4->v0},
+						.color = color
+					},
+				}
+			}, poly.ft4->texture);
+			render_push_tris((tris_t) {
+				.vertices = {
+					{
+						.pos = vertex[coord2],
+						.uv = {poly.ft4->u2, poly.ft4->v2},
+						.color = color
+					},
+					{
+						.pos = vertex[coord3],
+						.uv = {poly.ft4->u3, poly.ft4->v3},
+						.color = color
+					},
+					{
+						.pos = vertex[coord1],
+						.uv = {poly.ft4->u1, poly.ft4->v1},
+						.color = color
+					},
+				}
+			}, poly.ft4->texture);
+
+			poly.ft4 += 1;
+			break;
+
+		case PRM_TYPE_G3:
+			coord0 = poly.g3->coords[0];
+			coord1 = poly.g3->coords[1];
+			coord2 = poly.g3->coords[2];
+
+			render_push_tris((tris_t) {
+				.vertices = {
+					{
+						.pos = vertex[coord2],
+						.color = color
+					},
+					{
+						.pos = vertex[coord1],
+						.color = color
+					},
+					{
+						.pos = vertex[coord0],
+						.color = color
+					},
+				}
+			}, RENDER_NO_TEXTURE);
+
+			poly.g3 += 1;
+			break;
+
+		case PRM_TYPE_G4:
+			coord0 = poly.g4->coords[0];
+			coord1 = poly.g4->coords[1];
+			coord2 = poly.g4->coords[2];
+			coord3 = poly.g4->coords[3];
+
+			render_push_tris((tris_t) {
+				.vertices = {
+					{
+						.pos = vertex[coord2],
+						.color = color
+					},
+					{
+						.pos = vertex[coord1],
+						.color = color
+					},
+					{
+						.pos = vertex[coord0],
+						.color = color
+					},
+				}
+			}, RENDER_NO_TEXTURE);
+			render_push_tris((tris_t) {
+				.vertices = {
+					{
+						.pos = vertex[coord2],
+						.color = color
+					},
+					{
+						.pos = vertex[coord3],
+						.color = color
+					},
+					{
+						.pos = vertex[coord1],
+						.color = color
+					},
+				}
+			}, RENDER_NO_TEXTURE);
+
+			poly.g4 += 1;
+			break;
+
+		case PRM_TYPE_F3:
+			coord0 = poly.f3->coords[0];
+			coord1 = poly.f3->coords[1];
+			coord2 = poly.f3->coords[2];
+
+			render_push_tris((tris_t) {
+				.vertices = {
+					{
+						.pos = vertex[coord2],
+						.color = color
+					},
+					{
+						.pos = vertex[coord1],
+						.color = color
+					},
+					{
+						.pos = vertex[coord0],
+						.color = color
+					},
+				}
+			}, RENDER_NO_TEXTURE);
+
+			poly.f3 += 1;
+			break;
+
+		case PRM_TYPE_F4:
+			coord0 = poly.f4->coords[0];
+			coord1 = poly.f4->coords[1];
+			coord2 = poly.f4->coords[2];
+			coord3 = poly.f4->coords[3];
+
+			render_push_tris((tris_t) {
+				.vertices = {
+					{
+						.pos = vertex[coord2],
+						.color = color
+					},
+					{
+						.pos = vertex[coord1],
+						.color = color
+					},
+					{
+						.pos = vertex[coord0],
+						.color = color
+					},
+				}
+			}, RENDER_NO_TEXTURE);
+			render_push_tris((tris_t) {
+				.vertices = {
+					{
+						.pos = vertex[coord2],
+						.color = color
+					},
+					{
+						.pos = vertex[coord3],
+						.color = color
+					},
+					{
+						.pos = vertex[coord1],
+						.color = color
+					},
+				}
+			}, RENDER_NO_TEXTURE);
+
+			poly.f4 += 1;
+			break;
+
+		case PRM_TYPE_TSPR:
+		case PRM_TYPE_BSPR:
+			coord0 = poly.spr->coord;
+
+			render_push_sprite(
+				vec3(
+					vertex[coord0].x,
+					vertex[coord0].y + ((poly.primitive->type == PRM_TYPE_TSPR ? poly.spr->height : -poly.spr->height) >> 1),
+					vertex[coord0].z
+				),
+				vec2i(poly.spr->width, poly.spr->height),
+				color,
+				poly.spr->texture
+			);
+
+			poly.spr += 1;
+			break;
+
+		default:
+			break;
+
+		}
+	}
+}

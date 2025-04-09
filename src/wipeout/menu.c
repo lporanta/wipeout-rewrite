@@ -74,7 +74,6 @@ void menu_page_add_toggle(menu_page_t *page, int data, char *text, const char **
 	entry->options_len = len;
 }
 
-
 void menu_update(menu_t *menu) {
 	render_set_view_2d();
 	
@@ -111,6 +110,8 @@ void menu_update(menu_t *menu) {
 
 		if (last_index != page->index) {
 			sfx_play(SFX_MENU_MOVE);
+			// input_rumble(0x0000, 0xFFFF, 16);
+			// input_rumble(0.0, 1.0, 16);
 		}
 		selected_data = page->entries[page->index].data;
 	}

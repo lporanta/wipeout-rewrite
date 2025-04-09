@@ -30,6 +30,8 @@ extern uint16_t RENDER_NO_TEXTURE;
 void render_init(vec2i_t screen_size);
 void render_cleanup(void);
 
+void render_set_projection_fov(float v_fov);
+
 void render_set_screen_size(vec2i_t size);
 void render_set_resolution(render_resolution_t res);
 void render_set_post_effect(render_post_effect_t post);

@@ -14,6 +14,7 @@ typedef struct camera_t {
 	section_t *section;
 	bool has_initial_section;
 	float update_timer;
+	float shake_timer;
 	void (*update_func)(struct camera_t *, ship_t *, droid_t *);
 } camera_t;
 
@@ -28,5 +29,8 @@ void camera_update_attract_internal(camera_t *, ship_t *camShip, droid_t *);
 void camera_update_static_follow(camera_t *, ship_t *camShip, droid_t *);
 void camera_update_attract_random(camera_t *, ship_t *camShip, droid_t *);
 void camera_update_rescue(camera_t *, ship_t *camShip, droid_t *);
+
+void camera_add_shake(camera_t *, float duration);
+void camera_update_shake(camera_t *);
 
 #endif

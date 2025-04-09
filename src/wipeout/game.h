@@ -11,7 +11,7 @@
 #define NUM_AI_OPPONENTS 7
 #define NUM_PILOTS_PER_TEAM 2
 #define NUM_NON_BONUS_CIRCUTS 6
-#define NUM_MUSIC_TRACKS 11
+#define NUM_MUSIC_TRACKS 22 //11
 #define NUM_HIGHSCORES 5
 
 #define NUM_LAPS 3
@@ -40,7 +40,6 @@ typedef enum {
 	A_MENU_START,
 	A_MENU_QUIT,
 } action_t;
-
 
 typedef enum {
 	GAME_SCENE_INTRO,
@@ -99,9 +98,16 @@ enum circut {
 	CIRCUT_ARRIDOS_IV,
 	CIRCUT_SILVERSTREAM,
 	CIRCUT_FIRESTAR,
+	CIRCUT_VOSTOK_ISLAND,
+	CIRCUT_VALPARAISO,
+	CIRCUT_PHENITIA_PARK,
+	CIRCUT_SPILSKINANKE,
+	CIRCUT_ODESSA_KEYS,
+	CIRCUT_TALONS_REACH,
+	CIRCUT_GARE_D_EUROPA,
+	CIRCUT_SAGARMATHA,
 	NUM_CIRCUTS
 };
-
 
 // Game definitions
 
@@ -182,7 +188,6 @@ typedef struct {
 } game_def_t;
 
 
-
 // Running game data
 
 typedef struct {
@@ -221,7 +226,6 @@ typedef struct {
 } game_t;
 
 
-
 // Save Data
 
 typedef struct {
@@ -238,14 +242,27 @@ typedef struct {
 	uint32_t magic;
 	bool is_dirty;
 
+	// audio
 	float sfx_volume;
 	float music_volume;
-	float internal_roll;
+
 	uint8_t ui_scale;
+
+	// video
+	float internal_roll;
+	float fov;
+	bool show_hud;
 	bool show_fps;
 	bool fullscreen;
 	int screen_res;
 	int post_effect;
+	bool dynamic_lighting;
+	bool psx_wobble;
+	bool screen_shake;
+
+	// misc
+	bool rumble;
+	bool mode_2097;
 
 	uint32_t has_rapier_class;
 	uint32_t has_bonus_circuts;
@@ -255,8 +272,6 @@ typedef struct {
 	char highscores_name[4];
 	highscores_t highscores[NUM_RACE_CLASSES][NUM_CIRCUTS][NUM_HIGHSCORE_TABS];
 } save_t;
-
-
 
 
 extern const game_def_t def;

@@ -61,7 +61,6 @@ void sfx_load(void) {
 	music->file = NULL;
 	music->track_index = -1;
 
-
 	// Load SFX samples
 	nodes = mem_bump(SFX_MAX * sizeof(sfx_t));
 
@@ -144,8 +143,6 @@ void sfx_pause(void) {
 	}
 }
 
-
-
 // Sound effects
 
 sfx_t *sfx_get_node(sfx_source_t source_index) {
@@ -222,9 +219,6 @@ void sfx_set_position(sfx_t *sfx, vec3_t pos, vec3_t vel, float volume) {
 	sfx->pitch = (262144.0 - away) / 524288.0;
 }
 
-
-
-
 // Music
 
 uint32_t sfx_music_decode_frame(void) {
@@ -300,10 +294,6 @@ void sfx_music_play(uint32_t index) {
 void sfx_music_mode(sfx_music_mode_t mode) {
 	music->mode = mode;
 }
-
-
-
-
 
 // Mixing
 

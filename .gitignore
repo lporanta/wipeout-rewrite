@@ -2,9 +2,12 @@
 /wipeout.sublime-workspace
 
 /wipeout/
+/wipeout1/
+/wipeout2/
 /build/
 
 /wipegame
 /save.dat
 .DS_STORE
 gamecontrollerdb.txt
+texture_atlas.png

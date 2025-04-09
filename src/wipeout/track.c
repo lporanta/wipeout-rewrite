@@ -7,7 +7,6 @@
 #include "object.h"
 #include "track.h"
 #include "camera.h"
-#include "object.h"
 #include "game.h"
 
 void track_load(const char *base_path) {
@@ -242,9 +241,6 @@ void track_load_sections(char *file_name) {
 
 	mem_temp_free(bytes);
 }
-
-
-
 
 void track_draw_section(section_t *section) {
 	track_face_t *face = g.track.faces + section->face_start;

@@ -5,19 +5,19 @@
 #include "track.h"
 #include "sfx.h"
 
-#define SHIP_IN_TOW			 	(1<< 0)
-#define SHIP_VIEW_REMOTE	 	(1<< 1)
-#define SHIP_VIEW_INTERNAL		(1<< 2)
-#define SHIP_DIRECTION_FORWARD	(1<< 3)
-#define SHIP_FLYING				(1<< 4)
+#define SHIP_IN_TOW			(1<< 0)
+#define SHIP_VIEW_INTERNAL	 	(1<< 1)
+#define SHIP_VIEW_REMOTE		(1<< 2)
+#define SHIP_DIRECTION_FORWARD		(1<< 3)
+#define SHIP_FLYING			(1<< 4)
 #define SHIP_LEFT_SIDE			(1<< 5)
-#define SHIP_RACING				(1<< 6)
-#define SHIP_COLL				(1<< 7)
+#define SHIP_RACING			(1<< 6)
+#define SHIP_COLL			(1<< 7)
 #define SHIP_ON_JUNCTION		(1<< 8)
 #define SHIP_VISIBLE			(1<< 9)
 #define SHIP_IN_RESCUE 			(1<<10)
 #define SHIP_OVERTAKEN 			(1<<11)
-#define SHIP_JUST_IN_FRONT	    (1<<12)
+#define SHIP_JUST_IN_FRONT	   	(1<<12)
 #define SHIP_JUNCTION_LEFT		(1<<13)
 #define SHIP_SHIELDED			(1<<14)
 #define SHIP_ELECTROED			(1<<15)
@@ -27,13 +27,19 @@
 
 // Timings
 
-#define UPDATE_TIME_INITIAL   (200.0 * (1.0/30.0))
-#define UPDATE_TIME_THREE     (150.0 * (1.0/30.0))
-#define UPDATE_TIME_RACE_VIEW (100.0 * (1.0/30.0))
-#define UPDATE_TIME_TWO       (100.0 * (1.0/30.0))
-#define UPDATE_TIME_ONE       ( 50.0 * (1.0/30.0))
-#define UPDATE_TIME_GO        (  0.0 * (1.0/30.0))
-
+// #define UPDATE_TIME_INITIAL   (200.0 * (1.0/30.0))
+// #define UPDATE_TIME_THREE     (150.0 * (1.0/30.0))
+// #define UPDATE_TIME_RACE_VIEW (100.0 * (1.0/30.0))
+// #define UPDATE_TIME_TWO       (100.0 * (1.0/30.0))
+// #define UPDATE_TIME_ONE       ( 50.0 * (1.0/30.0))
+// #define UPDATE_TIME_GO        (  0.0 * (1.0/30.0))
+// FIXME: timings for testing
+#define UPDATE_TIME_INITIAL   (5.0 * (1.0/30.0))
+#define UPDATE_TIME_THREE     (4.0 * (1.0/30.0))
+#define UPDATE_TIME_RACE_VIEW (3.0 * (1.0/30.0))
+#define UPDATE_TIME_TWO       (2.0 * (1.0/30.0))
+#define UPDATE_TIME_ONE       (1.0 * (1.0/30.0))
+#define UPDATE_TIME_GO        (0.0 * (1.0/30.0))
 
 // Physics conversion
 
@@ -47,12 +53,12 @@
 #define YAW_VELOCITY(V) ((V) * (1.0/64.0))
 #define ROLL_VELOCITY(V) ((V) * (1.0))
 
-#define SHIP_FLYING_GRAVITY   150000.0
-#define SHIP_ON_TRACK_GRAVITY 20000.0
-#define SHIP_MIN_RESISTANCE 	20 // 20	 // 12
-#define SHIP_MAX_RESISTANCE 	74 //74
-#define SHIP_VELOCITY_SHIFT 	6
-#define SHIP_TRACK_MAGNET	64	// 64
+#define SHIP_FLYING_GRAVITY	80000.0
+#define SHIP_ON_TRACK_GRAVITY	30000.0
+#define SHIP_MIN_RESISTANCE	12 //20? 12
+#define SHIP_MAX_RESISTANCE 	74
+#define SHIP_VELOCITY_SHIFT	6
+#define SHIP_TRACK_MAGNET	64 // 64
 #define SHIP_TRACK_FLOAT 	256
 
 #define SHIP_PITCH_ACCEL    NTSC_ACCELERATION(ANGLE_NORM_TO_RADIAN(FIXED_TO_FLOAT(PITCH_VELOCITY(30))))
@@ -125,8 +131,12 @@ typedef struct ship_t {
 	float update_timer;
 	float last_impact_time;
 
+	// Rumble Control Attributes (FIXME)
+	float last_boost_rumble;
+
 	mat4_t mat;
 	Object *model;
+	Object *model2;
 	Object *collision_model;
 	uint16_t shadow_texture;
 
@@ -157,7 +167,9 @@ void ship_init_exhaust_plume(ship_t *self);
 void ship_reset_exhaust_plume(ship_t *self);
 void ship_draw(ship_t *self);
 void ship_draw_shadow(ship_t *self);
+void ship_draw_flare(ship_t *self);
 void ship_update(ship_t *self);
+void ship_update_unit_vectors(ship_t *self);
 void ship_collide_with_track(ship_t *self, track_face_t *face);
 void ship_collide_with_ship(ship_t *self, ship_t *other);
 

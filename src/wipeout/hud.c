@@ -18,6 +18,8 @@
 static texture_list_t weapon_icon_textures;
 static uint16_t target_reticle;
 
+#define HUD 0
+
 typedef struct {
 	vec2i_t offset;
 	uint16_t height;
@@ -32,19 +34,19 @@ const struct {
 	.width = 121,
 	.skew = 2,
 	.bars = {
-		{{.x =   6, .y = 12}, .height = 10, .color = rgba(192,8,94,255)},
-		{{.x =  13, .y = 12}, .height = 10, .color = rgba(192,8,94,255)},
-		{{.x =  20, .y = 12}, .height = 10, .color = rgba(192,8,94,255)},
-		{{.x =  27, .y = 12}, .height = 10, .color = rgba(192,8,94,255)},
-		{{.x =  34, .y = 12}, .height = 10, .color = rgba(192,8,94,255)},
-		{{.x =  41, .y = 12}, .height = 10, .color = rgba(192,8,94,255)},
-		{{.x =  50, .y = 10}, .height = 12, .color = rgba(192,8,94,255)},
-		{{.x =  59, .y =  8}, .height = 12, .color = rgba(192,8,94,255)},
-		{{.x =  69, .y =  5}, .height = 13, .color = rgba(192,8,94,255)},
-		{{.x =  81, .y =  2}, .height = 15, .color = rgba(192,8,94,255)},
-		{{.x =  95, .y =  1}, .height = 16, .color = rgba(192,8,94,255)},
-		{{.x = 110, .y =  1}, .height = 16, .color = rgba(192,8,94,255)},
-		{{.x = 126, .y =  1}, .height = 16, .color = rgba(192,8,94,255)},
+		{{.x =   6, .y = 12}, .height = 10, .color = rgba(29, 23, 39, 255) },
+		{{.x =  13, .y = 12}, .height = 10, .color = rgba(29, 23, 39, 255)},
+		{{.x =  20, .y = 12}, .height = 10, .color = rgba(50, 30, 61, 255)},
+		{{.x =  27, .y = 12}, .height = 10, .color = rgba(75, 30, 77, 255)},
+		{{.x =  34, .y = 12}, .height = 10, .color = rgba(126, 30, 65, 255)},
+		{{.x =  41, .y = 12}, .height = 10, .color = rgba(204, 19, 30, 255)},
+		{{.x =  50, .y = 10}, .height = 12, .color = rgba(233, 41, 14, 255)},
+		{{.x =  59, .y =  8}, .height = 12, .color = rgba(255, 98, 5, 255)},
+		{{.x =  69, .y =  5}, .height = 13, .color = rgba(255, 147, 5, 255)},
+		{{.x =  81, .y =  2}, .height = 15, .color = rgba(255, 187, 34, 255)},
+		{{.x =  95, .y =  1}, .height = 16, .color = rgba(255, 221, 71, 255)},
+		{{.x = 110, .y =  1}, .height = 16, .color = rgba(255, 247, 108, 255)},
+		{{.x = 126, .y =  1}, .height = 16, .color = rgba(255, 248, 148, 255)}
 	}
 	// .bars = {
 	// 	{{.x =   6, .y = 12}, .height = 10, .color = rgba( 66,  16,  49, 255)},
@@ -177,7 +179,7 @@ static void hud_draw_speedo(int speed, int thrust) {
 	vec2i_t bar_pos = ui_scaled_pos(UI_POS_BOTTOM | UI_POS_RIGHT, vec2i(-141, -40));
 	hud_draw_speedo_bars(&bar_pos, thrust / 65.0, rgba(255, 0, 0, 128));
 	hud_draw_speedo_bars(&bar_pos, speed / 2166.0, rgba(0, 0, 0, 0));
-	render_push_2d(facia_pos, ui_scaled(render_texture_size(speedo_facia_texture)), rgba(128, 128, 128, 255), speedo_facia_texture);
+	render_push_2d(facia_pos, ui_scaled(render_texture_size(speedo_facia_texture)), rgba(128, 128, 128, 255), speedo_facia_texture); //rgba(128, 128, 128, 255)
 }
 
 static void hud_draw_target_icon(vec3_t position) {
@@ -203,62 +205,65 @@ static void hud_draw_target_icon(vec3_t position) {
 
 void hud_draw(ship_t *ship) {
 	// Current lap time
-	if (ship->lap >= 0) {
-		ui_draw_time(ship->lap_time, ui_scaled_pos(UI_POS_BOTTOM | UI_POS_LEFT, vec2i(16, -30)), UI_SIZE_16, UI_COLOR_DEFAULT);
-	
-		for (int i = 0; i < ship->lap && i < NUM_LAPS-1; i++) {
-			ui_draw_time(g.lap_times[ship->pilot][i], ui_scaled_pos(UI_POS_BOTTOM | UI_POS_LEFT, vec2i(16, -45 - (10 * i))), UI_SIZE_8, UI_COLOR_ACCENT);
+	if (save.show_hud) {
+		if (ship->lap >= 0) {
+			ui_draw_time(ship->lap_time, ui_scaled_pos(UI_POS_BOTTOM | UI_POS_LEFT, vec2i(16, -30)), UI_SIZE_16, UI_COLOR_DEFAULT);
+		
+			for (int i = 0; i < ship->lap && i < NUM_LAPS-1; i++) {
+				ui_draw_time(g.lap_times[ship->pilot][i], ui_scaled_pos(UI_POS_BOTTOM | UI_POS_LEFT, vec2i(16, -45 - (10 * i))), UI_SIZE_8, UI_COLOR_ACCENT);
+			}
 		}
-	}
 
-	// Current Lap
-	int display_lap = max(0, ship->lap + 1);
-	ui_draw_text("LAP", ui_scaled(vec2i(15, 8)), UI_SIZE_8, UI_COLOR_ACCENT); 
-	ui_draw_number(display_lap, ui_scaled(vec2i(10, 19)), UI_SIZE_16, UI_COLOR_DEFAULT); 
-	int width = ui_char_width('0' + display_lap, UI_SIZE_16);
-	ui_draw_text("OF", ui_scaled(vec2i((10 + width), 27)), UI_SIZE_8, UI_COLOR_ACCENT);
-	ui_draw_number(NUM_LAPS, ui_scaled(vec2i((32 + width), 19)), UI_SIZE_16, UI_COLOR_DEFAULT);
+		// Current Lap
+		int display_lap = max(0, ship->lap + 1);
+		ui_draw_text("LAP", ui_scaled(vec2i(15, 8)), UI_SIZE_8, UI_COLOR_ACCENT); 
+		ui_draw_number(display_lap, ui_scaled(vec2i(10, 19)), UI_SIZE_16, UI_COLOR_DEFAULT); 
+		int width = ui_char_width('0' + display_lap, UI_SIZE_16);
+		ui_draw_text("OF", ui_scaled(vec2i((10 + width), 27)), UI_SIZE_8, UI_COLOR_ACCENT);
+		ui_draw_number(NUM_LAPS, ui_scaled(vec2i((32 + width), 19)), UI_SIZE_16, UI_COLOR_DEFAULT);
 
-	// Race Position
-	if (g.race_type != RACE_TYPE_TIME_TRIAL) {
-		ui_draw_text("POSITION", ui_scaled_pos(UI_POS_TOP | UI_POS_RIGHT, vec2i(-90, 8)), UI_SIZE_8, UI_COLOR_ACCENT);
-		ui_draw_number(ship->position_rank, ui_scaled_pos(UI_POS_TOP | UI_POS_RIGHT, vec2i(-60, 19)), UI_SIZE_16, UI_COLOR_DEFAULT);
+		// Race Position
+		if (g.race_type != RACE_TYPE_TIME_TRIAL) {
+			ui_draw_text("POSITION", ui_scaled_pos(UI_POS_TOP | UI_POS_RIGHT, vec2i(-90, 8)), UI_SIZE_8, UI_COLOR_ACCENT);
+			ui_draw_number(ship->position_rank, ui_scaled_pos(UI_POS_TOP | UI_POS_RIGHT, vec2i(-60, 19)), UI_SIZE_16, UI_COLOR_DEFAULT);
+		}
+
+		// Lap Record
+		ui_draw_text("LAP RECORD", ui_scaled(vec2i(15, 43)), UI_SIZE_8, UI_COLOR_ACCENT);
+		ui_draw_time(save.highscores[g.race_class][g.circut][g.highscore_tab].lap_record, ui_scaled(vec2i(15, 55)), UI_SIZE_8, UI_COLOR_DEFAULT);
+
+		// Wrong way
+		if (flags_not(ship->flags, SHIP_DIRECTION_FORWARD)) {
+			ui_draw_text_centered("WRONG WAY", ui_scaled_pos(UI_POS_MIDDLE | UI_POS_CENTER, vec2i(-20, 0)), UI_SIZE_16, UI_COLOR_ACCENT);
+		}
+
+		// Speedo
+		int speedo_speed = (g.camera.update_func == camera_update_attract_internal)
+			? ship->speed * 7
+			: ship->speed;
+		hud_draw_speedo(speedo_speed, ship->thrust_mag);
+
+		// Lives
+		if (g.race_type == RACE_TYPE_CHAMPIONSHIP) {
+			for (int i = 0; i < g.lives; i++) {
+				ui_draw_icon(UI_ICON_STAR, ui_scaled_pos(UI_POS_BOTTOM | UI_POS_RIGHT, vec2i(-26 - 13 * i, -50)), UI_COLOR_DEFAULT);
+			}
+		}
+
+		// Weapon icon
+		if (ship->weapon_type != WEAPON_TYPE_NONE) {
+			vec2i_t pos = ui_scaled_pos(UI_POS_TOP | UI_POS_CENTER, vec2i(-16, 20));
+			vec2i_t size = ui_scaled(vec2i(32, 32));
+			uint16_t icon = texture_from_list(weapon_icon_textures, ship->weapon_type-1);
+			render_push_2d(pos, size, rgba(128,128,128,255), icon); //rgba(128,128,128,255)
+		}
+
 	}
 
 	// Framerate
 	if (save.show_fps) {
 		ui_draw_text("FPS", ui_scaled(vec2i(16, 78)), UI_SIZE_8, UI_COLOR_ACCENT);
 		ui_draw_number((int)(g.frame_rate), ui_scaled(vec2i(16, 90)), UI_SIZE_8, UI_COLOR_DEFAULT);
-	}
-
-	// Lap Record
-	ui_draw_text("LAP RECORD", ui_scaled(vec2i(15, 43)), UI_SIZE_8, UI_COLOR_ACCENT);
-	ui_draw_time(save.highscores[g.race_class][g.circut][g.highscore_tab].lap_record, ui_scaled(vec2i(15, 55)), UI_SIZE_8, UI_COLOR_DEFAULT);
-
-	// Wrong way
-	if (flags_not(ship->flags, SHIP_DIRECTION_FORWARD)) {
-		ui_draw_text_centered("WRONG WAY", ui_scaled_pos(UI_POS_MIDDLE | UI_POS_CENTER, vec2i(-20, 0)), UI_SIZE_16, UI_COLOR_ACCENT);
-	}
-
-	// Speedo
-	int speedo_speed = (g.camera.update_func == camera_update_attract_internal)
-		? ship->speed * 7
-		: ship->speed;
-	hud_draw_speedo(speedo_speed, ship->thrust_mag);
-
-	// Weapon icon
-	if (ship->weapon_type != WEAPON_TYPE_NONE) {
-		vec2i_t pos = ui_scaled_pos(UI_POS_TOP | UI_POS_CENTER, vec2i(-16, 20));
-		vec2i_t size = ui_scaled(vec2i(32, 32));
-		uint16_t icon = texture_from_list(weapon_icon_textures, ship->weapon_type-1);
-		render_push_2d(pos, size, rgba(128,128,128,255), icon);
-	}
-
-	// Lives
-	if (g.race_type == RACE_TYPE_CHAMPIONSHIP) {
-		for (int i = 0; i < g.lives; i++) {
-			ui_draw_icon(UI_ICON_STAR, ui_scaled_pos(UI_POS_BOTTOM | UI_POS_RIGHT, vec2i(-26 - 13 * i, -50)), UI_COLOR_DEFAULT);
-		}
 	}
 
 	// Weapon target reticle

@@ -34,8 +34,11 @@ void race_init(void) {
 	menu_is_scroll_text = false;
 
 	const circut_settings_t *cs = &def.circuts[g.circut].settings[g.race_class];
+	// const circut_settings_t *cs_venom = &def.circuts[g.circut].settings[RACE_CLASS_VENOM];
 	track_load(cs->path);
+	// track_load(cs_venom->path);
 	scene_load(cs->path, cs->sky_y_offset);
+	// scene_load(cs_venom->path, cs_venom->sky_y_offset);
 	
 	if (g.circut == CIRCUT_SILVERSTREAM && g.race_class == RACE_CLASS_RAPIER) {
 		scene_init_aurora_borealis();	
@@ -80,6 +83,7 @@ void race_update(void) {
 		ships_update();
 		droid_update(&g.droid, &g.ships[g.pilot]);
 		camera_update(&g.camera, &g.ships[g.pilot], &g.droid);
+		camera_update_shake(&g.camera);
 		weapons_update();
 		particles_update();
 		scene_update();
@@ -104,6 +108,8 @@ void race_update(void) {
 
 	// Draw 3D
 	render_set_view(g.camera.position, g.camera.angle);
+
+	// render_set_projection_fov(clamp(70.0 + g.ships[g.pilot].speed * 0.001, 30.0, 150.0)); //testing
 
 	render_set_cull_backface(false);
 	scene_draw(&g.camera);	

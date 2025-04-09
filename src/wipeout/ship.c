@@ -1,6 +1,7 @@
 #include "../mem.h"
 #include "../utils.h"
 #include "../system.h"
+#include "../input.h"
 
 #include "object.h"
 #include "scene.h"
@@ -15,24 +16,32 @@
 #include "game.h"
 #include "race.h"
 #include "sfx.h"
+#include "particle.h"
 
 void ships_load(void) {
 	texture_list_t ship_textures = image_get_compressed_textures("wipeout/common/allsh.cmp");
 	Object *ship_models = objects_load("wipeout/common/allsh.prm", ship_textures);
+
+	// and 2097 models
+	texture_list_t ship_textures2 = image_get_compressed_textures("wipeout/common/allsh2.cmp");
+	Object *ship_models2 = objects_load("wipeout/common/allsh2.prm", ship_textures2);
 
 	texture_list_t collision_textures = image_get_compressed_textures("wipeout/common/alcol.cmp");
 	Object *collision_models = objects_load("wipeout/common/alcol.prm", collision_textures);
 
 	int object_index;
 	Object *ship_model = ship_models;
+	Object *ship_model2 = ship_models2;
 	Object *collision_model = collision_models;
 
 	for (object_index = 0; object_index < len(g.ships) && ship_model && collision_model; object_index++) {
 		int ship_index = def.ship_model_to_pilot[object_index];
 		g.ships[ship_index].model = ship_model;
+		g.ships[ship_index].model2 = ship_model2;
 		g.ships[ship_index].collision_model = collision_model;
 
 		ship_model = ship_model->next;
+		ship_model2 = ship_model2->next;
 		collision_model = collision_model->next;
 
 		ship_init_exhaust_plume(&g.ships[ship_index]);
@@ -40,6 +49,7 @@ void ships_load(void) {
 
 	error_if(object_index != len(g.ships), "Expected %ld ship models, got %d", len(g.ships), object_index);
 
+	// TODO: how to get 2097 shadows?
 	uint16_t shadow_textures_start = render_textures_len();
 	image_get_texture_semi_trans("wipeout/textures/shad1.tim");
 	image_get_texture_semi_trans("wipeout/textures/shad2.tim");
@@ -184,6 +194,23 @@ void ships_draw(void) {
 
 	render_set_depth_offset(0.0);
 	render_set_depth_write(true);
+	
+	// 2097 flare
+	if (save.mode_2097) {
+		for (int i = 0; i < len(g.ships); i++) {
+			if (
+				(g.race_type == RACE_TYPE_TIME_TRIAL && i != g.pilot) ||
+				flags_not(g.ships[i].flags, SHIP_VISIBLE)
+			) {
+				continue;
+			}
+			if (i=g.pilot) {
+				ship_update_unit_vectors(&g.ships[i]);
+			}
+
+			ship_draw_flare(&g.ships[i]);
+		}
+	}
 }
 
 void ship_init(ship_t *self, section_t *section, int pilot, int inv_start_rank) {
@@ -210,6 +237,8 @@ void ship_init(ship_t *self, section_t *section, int pilot, int inv_start_rank) 
 
 	self->update_timer = 0;
 	self->last_impact_time = 0;
+
+	self->last_boost_rumble = 666;
 
 	int team = def.pilots[pilot].team;
 	self->mass =          def.teams[team].attributes[g.race_class].mass;
@@ -386,6 +415,7 @@ void ship_init_exhaust_plume(ship_t *self) {
 			self->exhaust_plume[j].initial = self->model->vertices[shared[j]];
 		}
 	}
+
 }
 
 void ship_reset_exhaust_plume(ship_t* self)
@@ -401,7 +431,211 @@ void ship_reset_exhaust_plume(ship_t* self)
 
 
 void ship_draw(ship_t *self) {
-	object_draw(self->model, &self->mat);
+	// object_draw(save.mode_2097 ? self->model2 : self->model, &self->mat);
+	
+	// TODO: something more efficient and DRY?
+	// Figure out which side of the track the ship is on
+	track_face_t *face = track_section_get_base_face(self->section);
+
+	vec3_t to_face_vector = vec3_sub(
+		face->tris[0].vertices[0].pos,
+		face->tris[0].vertices[1].pos
+	);
+
+	vec3_t direction = vec3_sub(self->section->center, self->position);
+
+	if (vec3_dot(direction, to_face_vector) > 0) {
+		flags_add(self->flags, SHIP_LEFT_SIDE);
+	}
+	else {
+		flags_rm(self->flags, SHIP_LEFT_SIDE);
+		face++;
+	}
+
+	if (save.mode_2097 && save.dynamic_lighting) {
+		object_draw_colored(self->model2, &self->mat, face->tris[0].vertices[0].color);
+	} else if (save.mode_2097) {
+		object_draw(self->model2, &self->mat);
+	} else if (save.dynamic_lighting) {
+		object_draw_colored(self->model, &self->mat, face->tris[0].vertices[0].color);
+	} else {
+		object_draw(self->model, &self->mat);
+	}
+}
+
+void ship_draw_flare(ship_t *self) {	
+	// TODO: shimmering?
+	//clamp(vec3_len(self->thrust)/1550.0,0,255)
+
+	// rgba_t color = rgba(0,0,255,clamp(((1+sin(system_time()*20.0))/2.0)*vec3_len(self->thrust)/155.0,90,255));
+	float thrust_factor = clamp(vec3_len(self->thrust)/20000.0,0,1.0);
+	if (self->pilot != g.pilot) {
+		thrust_factor = 1.0;
+	}
+	mat4_t *m = &mat4_identity();
+	mat4_set_yaw_pitch_roll(m, vec3_add(g.camera.angle, vec3(0,0,M_PI / 2)));
+	mat4_set_translation(m, vec3_sub(vec3_add(self->position, vec3_mulf(self->dir_up, 10)), vec3_mulf(self->dir_forward, 435)));
+	render_set_model_mat(m);
+	render_set_depth_write(false);
+	render_set_blend_mode(RENDER_BLEND_NORMAL);
+	render_set_depth_offset(-32.0);
+	// render_set_depth_offset(0.0);
+
+	// DIAMOND
+	uint16_t radius = 64;
+	for (int i = 0; i < 4; i++) {
+		mat4_set_yaw_pitch_roll(
+			m,
+			vec3_add(g.camera.angle, vec3(0,0,(M_PI / 2) * i))
+		);
+		render_set_model_mat(m);
+		// northeast
+		render_push_tris((tris_t) {
+			.vertices = {
+				{
+					.pos = {0, 0, 0},
+					.color = rgba(80,80,255,240)
+				},
+				{
+					.pos = {thrust_factor*radius, 0, 0},
+					.color = rgba(5,5,255,0)
+				},
+				{
+					.pos = {0, thrust_factor*-radius, 0},
+					.color = rgba(5,5,255,0)
+				},
+			}
+		}, RENDER_NO_TEXTURE);
+	}
+
+	render_set_blend_mode(RENDER_BLEND_LIGHTER);
+	// STAR
+	uint16_t long_length = 180;
+	uint16_t half_width = 7;
+	uint16_t inner_alpha = 180;
+	vec3_t offset = vec3(0, 0, M_PI / 4);
+	
+	for (int i = 0; i < 2; i++) {
+		mat4_set_yaw_pitch_roll(
+			m,
+			// vec3_add(g.camera.angle, vec3(0,0,(M_PI / 2) * i))
+			vec3_add(
+				g.camera.angle,
+				vec3_add(offset, vec3(0, 0, M_PI * i))
+				)
+		);
+		render_set_model_mat(m);
+		render_push_tris((tris_t) {
+			.vertices = {
+				{
+					.pos = {0, 0, 0},
+					.color = rgba(80,80,255,inner_alpha)
+				},
+				{
+					.pos = {thrust_factor*long_length, 0, 0},
+					.color = rgba(80,80,255,0)
+				},
+				{
+					.pos = {thrust_factor*half_width, thrust_factor*-half_width, 0},
+					.color = rgba(80,80,255,0)
+				},
+			}
+		}, RENDER_NO_TEXTURE);
+		render_push_tris((tris_t) {
+			.vertices = {
+				{
+					.pos = {0, 0, 0},
+					.color = rgba(80,80,255,inner_alpha)
+				},
+				{
+					.pos = {thrust_factor*half_width, thrust_factor*half_width, 0},
+					.color = rgba(80,80,255,0)
+				},
+				{
+					.pos = {thrust_factor*long_length, 0, 0},
+					.color = rgba(80,80,255,0)
+				},
+			}
+		}, RENDER_NO_TEXTURE);
+	}
+
+	uint16_t short_length = 80;
+	vec3_t offset_short = vec3(0, 0, (M_PI / 4) * 3);
+	
+	for (int i = 0; i < 2; i++) {
+		mat4_set_yaw_pitch_roll(
+			m,
+			// vec3_add(g.camera.angle, vec3(80,80,(M_PI / 2) * i))
+			vec3_add(
+				g.camera.angle,
+				vec3_add(offset_short, vec3(0, 0, M_PI * i))
+				)
+		);
+		render_set_model_mat(m);
+		render_push_tris((tris_t) {
+			.vertices = {
+				{
+					.pos = {0, 0, 0},
+					.color = rgba(80,80,255,inner_alpha)
+				},
+				{
+					.pos = {thrust_factor*short_length, 0, 0},
+					.color = rgba(80,80,255,0)
+				},
+				{
+					.pos = {thrust_factor*half_width, thrust_factor*-half_width, 0},
+					.color = rgba(80,80,255,0)
+				},
+			}
+		}, RENDER_NO_TEXTURE);
+		render_push_tris((tris_t) {
+			.vertices = {
+				{
+					.pos = {0, 0, 0},
+					.color = rgba(80,80,255,inner_alpha)
+				},
+				{
+					.pos = {thrust_factor*half_width, thrust_factor*half_width, 0},
+					.color = rgba(80,80,255,0)
+				},
+				{
+					.pos = {thrust_factor*short_length, 0, 0},
+					.color = rgba(80,80,255,0)
+				},
+			}
+		}, RENDER_NO_TEXTURE);
+	}
+
+	// CENTER
+	uint16_t c_radius = 25;
+	for (int i = 0; i < 4; i++) {
+		mat4_set_yaw_pitch_roll(
+			m,
+			vec3_add(g.camera.angle, vec3(0,0,(M_PI / 2) * i))
+		);
+		render_set_model_mat(m);
+		// northeast
+		render_push_tris((tris_t) {
+			.vertices = {
+				{
+					.pos = {0, 0, 0},
+					.color = rgba(255,255,255,120)
+				},
+				{
+					.pos = {thrust_factor*c_radius, 0, 0},
+					.color = rgba(0,0,255,0)
+				},
+				{
+					.pos = {0, thrust_factor*-c_radius, 0},
+					.color = rgba(0,0,255,0)
+				},
+			}
+		}, RENDER_NO_TEXTURE);
+	}
+
+	render_set_depth_offset(0.0);
+	render_set_depth_write(true);
+	render_set_blend_mode(RENDER_BLEND_NORMAL);
 }
 
 void ship_draw_shadow(ship_t *self) {	
@@ -438,8 +672,29 @@ void ship_draw_shadow(ship_t *self) {
 	}, self->shadow_texture);
 }
 
-void ship_update(ship_t *self) {
+void ship_update_unit_vectors(ship_t *self) {
+	// Set Unit vectors of this ship
+	float sx = sin(self->angle.x);
+	float cx = cos(self->angle.x);
+	float sy = sin(self->angle.y);
+	float cy = cos(self->angle.y);
+	float sz = sin(self->angle.z);
+	float cz = cos(self->angle.z);
 
+	self->dir_forward.x = -(sy * cx);
+	self->dir_forward.y = - sx;
+	self->dir_forward.z =  (cy * cx);
+
+	self->dir_right.x =  (cy * cz) + (sy * sz * sx);
+	self->dir_right.y = -(sz * cx);
+	self->dir_right.z =  (sy * cz) - (cy * sx * sz);
+
+	self->dir_up.x = (cy * sz) - (sy * sx * cz);
+	self->dir_up.y = -(cx * cz);
+	self->dir_up.z = (sy * sz) + (cy * sx * cz);
+}
+
+void ship_update(ship_t *self) {
 	// Set Unit vectors of this ship
 	float sx = sin(self->angle.x);
 	float cx = cos(self->angle.x);
@@ -470,6 +725,7 @@ void ship_update(ship_t *self) {
 	// vec3(1, 0.25, 1) here.
 	float distance;
 	self->section = track_nearest_section(self->position, vec3(1, 0.25, 1), self->section, &distance);
+	// What is this magic number?
 	if (distance > 3700) {
 		flags_add(self->flags, SHIP_FLYING);
 	}
@@ -479,7 +735,6 @@ void ship_update(ship_t *self) {
 
 	self->prev_section_num = self->prev_section->num;
 	self->section_num = self->section->num;
-
 
 	// Figure out which side of the track the ship is on
 	track_face_t *face = track_section_get_base_face(self->section);
@@ -498,9 +753,19 @@ void ship_update(ship_t *self) {
 		flags_rm(self->flags, SHIP_LEFT_SIDE);
 		face++;
 	}
+	
+	// if (self->pilot == g.pilot) {
+	// 	printf("ship current face color: %d, %d, %d, %d\n",
+	// 		face->tris[0].vertices[0].color.r,
+	// 		face->tris[0].vertices[0].color.g,
+	// 		face->tris[0].vertices[0].color.b,
+	// 		face->tris[0].vertices[0].color.a
+	// 		);
+	// }
 
 	// Collect powerup
 	if (
+		g.race_type != RACE_TYPE_TIME_TRIAL &&
 		flags_is(face->flags, FACE_PICKUP_ACTIVE) &&
 		flags_not(self->flags, SHIP_SPECIALED) &&
 		self->weapon_type == WEAPON_TYPE_NONE &&
@@ -508,6 +773,7 @@ void ship_update(ship_t *self) {
 	) {
 		if (self->pilot == g.pilot) {
 			sfx_play(SFX_POWERUP);
+			input_rumble(0.0, 1.0, 64);
 			if (flags_is(self->flags, SHIP_SHIELDED)) {
 				self->weapon_type = weapon_get_random_type(WEAPON_CLASS_PROJECTILE);
 			}
@@ -525,20 +791,18 @@ void ship_update(ship_t *self) {
 	// Call the active player/ai update function
 	(self->update_func)(self);
 
-
 	// Animate the exhaust plume
-
 	int exhaust_len;
 
 	if (self->pilot == g.pilot) {
 		// get the z exhaust_len related to speed or thrust
-		exhaust_len = self->thrust_mag * 0.02; //0.0625
-		// exhaust_len += self->speed * 0.001; //0.00390625;
-		exhaust_len += clamp(vec3_len(self->thrust) * 0.0001, 0.0, 0.002); //0.00390625;
+		exhaust_len = self->thrust_mag * 0.0625;
+		exhaust_len += self->speed * 0.00390625;
+		exhaust_len += clamp(vec3_len(self->thrust) * 0.0001, 0.0, 0.00390625);
 	}
 	else {
 		// for remote ships the z exhaust_len is a constant
-		exhaust_len = 50; //150
+		exhaust_len = 150;
 	}
 
 	for (int i = 0; i < 3; i++) {
@@ -552,10 +816,7 @@ void ship_update(ship_t *self) {
 	mat4_set_translation(&self->mat, self->position);
 	mat4_set_yaw_pitch_roll(&self->mat, self->angle);
 
-
-
 	// Race position and lap times
-	
 	self->lap_time += system_tick();
 
 	int start_line_pos = def.circuts[g.circut].settings[g.race_class].start_line_pos;
@@ -593,6 +854,16 @@ void ship_update(ship_t *self) {
 		section_num_from_line += g.track.section_count;
 	}
 	self->total_section_num = self->lap * g.track.section_count + section_num_from_line;
+
+	// 2097 exhaust beam
+	// if (save.mode_2097) {
+		//PARTICLE_TYPE_EBOLT PARTICLE_TYPE_GREENY is good also
+		// int ptype = PARTICLE_TYPE_EBOLT;
+		// if (rand() % 20) {
+		// 	ptype = PARTICLE_TYPE_SMOKE;
+		// }
+		// particles_spawn(vec3_sub(self->position, vec3_mulf(self->dir_forward, 350.0+rand_float(0.0, 50.0))), ptype, vec3_mulf(self->velocity, 0.02), 30.0);
+	// }
 }
 
 vec3_t ship_cockpit(ship_t *self) {
@@ -628,15 +899,41 @@ static bool vec3_is_on_face(vec3_t pos, track_face_t *face, float alpha) {
 }
 
 void ship_resolve_wing_collision(ship_t *self, track_face_t *face, float direction) {
+	// original behaviour:
+	// no yaw, no roll when minimal, speed scales roll (angle too?), push up and towards center always
+	// TODO: how much is the orginal slowdown and what scales it
 	vec3_t collision_vector = vec3_sub(self->section->center, face->tris[0].vertices[2].pos);
+	// float collision_dot = vec3_dot(vec3_normalize(self->velocity), vec3_normalize(collision_vector));
+	float collision_dot = vec3_dot(self->dir_forward, vec3_normalize(collision_vector));
+	vec3_t to_center = vec3_normalize(vec3_sub(self->section->center, self->position));
 	float angle = vec3_angle(collision_vector, self->dir_forward);
-	self->velocity = vec3_reflect(self->velocity, face->normal, 2);
-	self->position = vec3_sub(self->position, vec3_mulf(self->velocity, 0.015625)); // system_tick?
-	self->velocity = vec3_sub(self->velocity, vec3_mulf(self->velocity, 0.5));
-	self->velocity = vec3_add(self->velocity, vec3_mulf(face->normal, 4096)); // div by 4096?
 
-	float magnitude = (fabsf(angle) * self->speed) * M_PI / (4096 * 16.0); // (6 velocity shift, 12 angle shift?)
+	if (save.mode_2097) {
+		self->velocity = vec3_mulf(self->velocity, 0.95);
+		self->position = vec3_add(self->position, vec3_mulf(to_center, fabs(collision_dot) * 32));
+		// self->velocity = vec3_add(self->velocity, vec3_mulf(face->normal, 4096 * 1.0 * !save.mode_2097)); // div by 4096?
+		// self->velocity = vec3_add(self->velocity, vec3_mulf(to_center, 256 * !save.mode_2097));
+		self->velocity = vec3_add(self->velocity, vec3_mulf(to_center, fabs(collision_dot) * 2048));
+	} else {
+		self->velocity = vec3_reflect(self->velocity, face->normal, 2);
+		// float angle = vec3_angle(collision_vector, self->velocity);
+		// float speedf = self->speed * 0.00015;
+		self->velocity = vec3_mulf(self->velocity, 0.63); //0.5
+		// self->position = vec3_sub(self->position, vec3_mulf(self->velocity, 0.015625)); // system_tick?
+		self->position = vec3_sub(self->position, vec3_mulf(self->velocity, system_tick()));
+		self->velocity = vec3_add(self->velocity, vec3_mulf(face->normal, 4096 * 1.0)); // div by 4096?
+		// self->velocity = vec3_sub(self->velocity, vec3_mulf(self->velocity, 0.5));
+		self->velocity = vec3_add(self->velocity, vec3_mulf(to_center, 256));
+		self->velocity = vec3_add(self->velocity, vec3_mulf(to_center, fabs(collision_dot) * 2048));
+	}
+	// printf("c angle: %f\n", angle);
+	// printf("c dot  : %f\n", collision_dot);
 
+	// float magnitude = (fabsf(angle) * self->speed) * M_PI / (4096 * 16.0); // (6 velocity shift, 12 angle shift?)
+	float magnitude = (fabsf(angle) * self->speed) * M_PI / (4096 * 2.0); // was too weak
+	magnitude *= !save.mode_2097;
+
+	// wing roll
 	vec3_t wing_pos;
 	if (direction > 0) {
 		self->angular_velocity.z += magnitude;
@@ -647,22 +944,53 @@ void ship_resolve_wing_collision(ship_t *self, track_face_t *face, float directi
 		wing_pos = vec3_sub(self->position, vec3_mulf(vec3_sub(self->dir_right, self->dir_forward), 256)); // >> 4??
 	}
 
+	// wing yaw 2097
+	if (save.mode_2097 && direction > 0) {
+		self->angular_velocity.y += 0.1;
+	}
+	else if (save.mode_2097) {
+		self->angular_velocity.y -= 0.1;	
+	}
+
 	if (self->last_impact_time > 0.2) {
 		self->last_impact_time = 0;
-		sfx_play_at(SFX_IMPACT, wing_pos, vec3(0, 0, 0), 1);
+		sfx_t *sfx = sfx_play_at(SFX_IMPACT, wing_pos, vec3(0, 0, 0), 0.1); // volume 1, TODO: scale with trauma?
+		// sfx->pitch = 0.25;
+		sfx->volume = 0.3;
+		if (self->pilot == g.pilot) {
+			input_rumble(0.0, 1.0, 128);
+			camera_add_shake(&g.camera, 0.15);
+		}
 	}
+
+	// 2097 scrape particles
+	// if (save.mode_2097) {
+	// 	int ptype = PARTICLE_TYPE_FIRE_WHITE;
+	// 	if (rand() % 20) {
+	// 		ptype = PARTICLE_TYPE_SMOKE;
+	// 	}
+	// 	particles_spawn(self->position, ptype, vec3_mulf(self->velocity, 0.02), 500.0);
+	// 	// printf("particles!\n");
+	// }
 }
 
 
 void ship_resolve_nose_collision(ship_t *self, track_face_t *face, float direction) {
+	// original behaviour:
+	// push up and towards center (and backwards?), speed scales push up and yaw
+
+	vec3_t to_center = vec3_normalize(vec3_sub(self->section->center, self->position));
 	vec3_t collision_vector = vec3_sub(self->section->center, face->tris[0].vertices[2].pos);
 	float angle = vec3_angle(collision_vector, self->dir_forward);
-	self->velocity = vec3_reflect(self->velocity, face->normal, 2);
-	self->position = vec3_sub(self->position, vec3_mulf(self->velocity, 0.015625)); // system_tick?
 	self->velocity = vec3_sub(self->velocity, vec3_mulf(self->velocity, 0.5));
+	self->velocity = vec3_reflect(self->velocity, face->normal, 2);
+	// self->position = vec3_sub(self->position, vec3_mulf(self->velocity, 0.015625)); // system_tick?
+	self->position = vec3_sub(self->position, vec3_mulf(self->velocity, system_tick())); // system_tick?
 	self->velocity = vec3_add(self->velocity, vec3_mulf(face->normal, 4096)); // div by 4096?
+	self->velocity = vec3_add(self->velocity, vec3_mulf(to_center, 256));
 
-	float magnitude = ((self->speed * 0.0625) + 400) * M_PI / (4096.0 * 64.0);
+	// float magnitude = ((self->speed * 0.0625) + 400) * M_PI / (4096.0 * 64.0);
+	float magnitude = (fabsf(angle) * self->speed) * M_PI / (4096 * 32.0); // was too weak
 	if (direction > 0) {
 		self->angular_velocity.y += magnitude;
 	}
@@ -672,7 +1000,13 @@ void ship_resolve_nose_collision(ship_t *self, track_face_t *face, float directi
 
 	if (self->last_impact_time > 0.2) {
 		self->last_impact_time = 0;
-		sfx_play_at(SFX_IMPACT, ship_nose(self), vec3(0, 0, 0), 1);
+		sfx_t *sfx = sfx_play_at(SFX_IMPACT, ship_nose(self), vec3(0, 0, 0), 1.0); //1
+		// sfx->pitch = 0.5;
+		sfx->volume = 0.3;
+		if (self->pilot == g.pilot) {
+			input_rumble(1.0, 1.0, 128);
+			camera_add_shake(&g.camera, 0.3);
+		}
 	}
 }
 
@@ -991,8 +1325,10 @@ void ship_collide_with_ship(ship_t *self, ship_t *other) {
 
 	vec3_t ship_react = vec3_mulf(vec3_sub(vc, self->velocity), 0.25);
 	vec3_t other_react = vec3_mulf(vec3_sub(vc, other->velocity), 0.25);
-	self->position = vec3_sub(self->position, vec3_mulf(self->velocity, 0.015625)); // >> 6
-	other->position = vec3_sub(other->position, vec3_mulf(other->velocity, 0.015625)); // >> 6
+	// self->position = vec3_sub(self->position, vec3_mulf(self->velocity, 0.015625)); // >> 6
+	// other->position = vec3_sub(other->position, vec3_mulf(other->velocity, 0.015625)); // >> 6
+	self->position = vec3_sub(self->position, vec3_mulf(self->velocity, system_tick()));
+	other->position = vec3_sub(other->position, vec3_mulf(other->velocity, system_tick()));
 
 	self->velocity = vec3_add(vc, ship_react);
 	other->velocity = vec3_add(vc, other_react);
@@ -1000,10 +1336,12 @@ void ship_collide_with_ship(ship_t *self, ship_t *other) {
 	vec3_t res = vec3_sub(self->position, other->position);
 
 	self->velocity = vec3_add(self->velocity, vec3_mulf(res, 2));  // << 2
-	self->position = vec3_add(self->position, vec3_mulf(self->velocity, 0.015625)); // >> 6
+	// self->position = vec3_add(self->position, vec3_mulf(self->velocity, 0.015625)); // >> 6
+	self->position = vec3_add(self->position, vec3_mulf(self->velocity, system_tick())); // >> 6
 
 	other->velocity = vec3_sub(other->velocity, vec3_mulf(res, 2)); // << 2
-	other->position = vec3_add(other->position, vec3_mulf(other->velocity, 0.015625)); // >> 6
+	// other->position = vec3_add(other->position, vec3_mulf(other->velocity, 0.015625)); // >> 6
+	other->position = vec3_add(other->position, vec3_mulf(other->velocity, system_tick())); // >> 6
 
 	if (
 		flags_not(self->flags, SHIP_COLL) && 

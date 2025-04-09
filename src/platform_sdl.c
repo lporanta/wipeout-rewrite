@@ -6,6 +6,8 @@
 #include "utils.h"
 #include "mem.h"
 
+#include "wipeout/game.h"
+
 static uint64_t perf_freq = 0;
 static bool wants_to_exit = false;
 static SDL_Window *window;
@@ -62,6 +64,13 @@ SDL_GameController *platform_find_gamepad(void) {
 	return NULL;
 }
 
+void input_rumble(float low_frequency_rumble, float high_frequency_rumble, uint32_t duration_ms) {
+	// if (gamepad && SDL_GameControllerHasRumble(gamepad)) {
+	if (gamepad && save.rumble) {
+		SDL_GameControllerRumble(gamepad, 0xFFFF * low_frequency_rumble, 0xFFFF * high_frequency_rumble, duration_ms);
+	}
+};
+
 
 void platform_pump_events(void) {
 	SDL_Event ev;
@@ -110,6 +119,10 @@ void platform_pump_events(void) {
 		) {
 			if (ev.cbutton.button < SDL_CONTROLLER_BUTTON_MAX) {
 				button_t button = platform_sdl_gamepad_map[ev.cbutton.button];
+				// testing
+				// if (ev.type == SDL_CONTROLLERBUTTONDOWN)
+					// SDL_GameControllerRumble(gamepad, 0x0000, 0xFFFF, 10);
+					// SDL_GameControllerRumble(gamepad, 0x0000, 0xFFFF, 16);
 				if (button != INPUT_INVALID) {
 					float state = ev.type == SDL_CONTROLLERBUTTONDOWN ? 1.0 : 0.0;
 					input_set_button_state(button, state);

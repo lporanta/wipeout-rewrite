@@ -172,6 +172,8 @@ void input_textinput(int32_t ascii_char);
 
 void input_capture(input_capture_callback_t cb, void *user);
 
+void input_rumble(float low_frequency_rumble, float high_frequency_rumble, uint32_t duration_ms);
+
 float input_state(uint8_t action);
 bool input_pressed(uint8_t action);
 bool input_released(uint8_t action);
