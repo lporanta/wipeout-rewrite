@@ -4,10 +4,10 @@ This is a fork of the Phoboslab re-implementation of the 1995 PSX game wipEout w
 
 * analog controller support
 * rumble
-* dynamic lighting
+* "dynamic lighting"
 * collisions closer to the original PSX version
 * FOV options
-* PSX polygon warp
+* optional PSX polygon warp
 
 Play here: https://phoboslab.org/wipegame/
 

@@ -22,26 +22,19 @@ void ships_load(void) {
 	texture_list_t ship_textures = image_get_compressed_textures("wipeout/common/allsh.cmp");
 	Object *ship_models = objects_load("wipeout/common/allsh.prm", ship_textures);
 
-	// and 2097 models
-	texture_list_t ship_textures2 = image_get_compressed_textures("wipeout/common/allsh2.cmp");
-	Object *ship_models2 = objects_load("wipeout/common/allsh2.prm", ship_textures2);
-
 	texture_list_t collision_textures = image_get_compressed_textures("wipeout/common/alcol.cmp");
 	Object *collision_models = objects_load("wipeout/common/alcol.prm", collision_textures);
 
 	int object_index;
 	Object *ship_model = ship_models;
-	Object *ship_model2 = ship_models2;
 	Object *collision_model = collision_models;
 
 	for (object_index = 0; object_index < len(g.ships) && ship_model && collision_model; object_index++) {
 		int ship_index = def.ship_model_to_pilot[object_index];
 		g.ships[ship_index].model = ship_model;
-		g.ships[ship_index].model2 = ship_model2;
 		g.ships[ship_index].collision_model = collision_model;
 
 		ship_model = ship_model->next;
-		ship_model2 = ship_model2->next;
 		collision_model = collision_model->next;
 
 		ship_init_exhaust_plume(&g.ships[ship_index]);
@@ -49,7 +42,6 @@ void ships_load(void) {
 
 	error_if(object_index != len(g.ships), "Expected %ld ship models, got %d", len(g.ships), object_index);
 
-	// TODO: how to get 2097 shadows?
 	uint16_t shadow_textures_start = render_textures_len();
 	image_get_texture_semi_trans("wipeout/textures/shad1.tim");
 	image_get_texture_semi_trans("wipeout/textures/shad2.tim");
@@ -60,7 +52,6 @@ void ships_load(void) {
 		g.ships[i].shadow_texture = shadow_textures_start + (i >> 1);
 	}
 }
-
 
 void ships_init(section_t *section) {
 	section_t *start_sections[len(g.ships)];
@@ -111,15 +102,6 @@ void ships_init(section_t *section) {
 		int rank_inv = (len(g.ships)-1) - i;
 		int pilot = ranks_to_pilots[i];
 		ship_init(&g.ships[pilot], start_sections[rank_inv], pilot, rank_inv);
-	}
-
-	// init trail
-	for (int i = 0; i < len(g.ships); i++) {
-		for (int j = 0; j < NUM_SHIP_TRAIL_POINTS; j++) {
-			g.ships[i].trail_buffer[j].left.color.a = 0;
-			g.ships[i].trail_buffer[j].center.color.a = 0;
-			g.ships[i].trail_buffer[j].right.color.a = 0;
-		}
 	}
 }
 
@@ -203,28 +185,6 @@ void ships_draw(void) {
 
 	render_set_depth_offset(0.0);
 	render_set_depth_write(true);
-	
-	// 2097 flare
-	if (save.mode_2097) {
-		for (int i = 0; i < len(g.ships); i++) {
-			if (
-				(g.race_type == RACE_TYPE_TIME_TRIAL && i != g.pilot) ||
-				flags_not(g.ships[i].flags, SHIP_VISIBLE)
-			) {
-				continue;
-			}
-			// required or player flare ugly and race crashes
-			ship_update_unit_vectors(&g.ships[i]);
-			// ship_draw_flare(&g.ships[i]);
-			ship_draw_flare_psx(&g.ships[i]);
-			if (i == g.pilot && g.ships[i].lap < NUM_LAPS) {
-				ship_draw_player_trail(&g.ships[i]);
-			} else {
-				ship_draw_trail(&g.ships[i]);
-			}
-		}
-		// printf("g.is_attract_mode: %d\n", g.is_attract_mode);
-	}
 }
 
 void ship_init(ship_t *self, section_t *section, int pilot, int inv_start_rank) {
@@ -254,7 +214,6 @@ void ship_init(ship_t *self, section_t *section, int pilot, int inv_start_rank) 
 	self->last_impact_time = 0;
 
 	self->last_boost_rumble = 666;
-	self->trail_buffer_loc = 0;
 
 	int team = def.pilots[pilot].team;
 	self->mass =          def.teams[team].attributes[g.race_class].mass;
@@ -446,8 +405,6 @@ void ship_reset_exhaust_plume(ship_t* self)
 }
 
 void ship_draw(ship_t *self) {
-	// object_draw(save.mode_2097 ? self->model2 : self->model, &self->mat);
-	
 	// TODO: something more efficient and DRY?
 	// Figure out which side of the track the ship is on
 	track_face_t *face = track_section_get_base_face(self->section);
@@ -467,584 +424,11 @@ void ship_draw(ship_t *self) {
 		face++;
 	}
 
-	if (save.mode_2097 && save.dynamic_lighting) {
-		object_draw_colored(self->model2, &self->mat, face->tris[0].vertices[0].color);
-	} else if (save.mode_2097) {
-		object_draw(self->model2, &self->mat);
-	} else if (save.dynamic_lighting) {
+	if (save.dynamic_lighting) {
 		object_draw_colored(self->model, &self->mat, face->tris[0].vertices[0].color);
 	} else {
 		object_draw(self->model, &self->mat);
 	}
-}
-
-void ship_draw_flare(ship_t *self) {	
-	// TODO: shimmering?
-	//clamp(vec3_len(self->thrust)/1550.0,0,255)
-
-	// rgba_t color = rgba(0,0,255,clamp(((1+sin(system_time()*20.0))/2.0)*vec3_len(self->thrust)/155.0,90,255));
-	float thrust_factor = clamp(vec3_len(self->thrust)/20000.0,0,1.0);
-	if (self->pilot != g.pilot) {
-		thrust_factor = 1.0;
-	}
-	mat4_t m = mat4_identity();
-	mat4_set_yaw_pitch_roll(&m, vec3_add(g.camera.angle, vec3(0,0,M_PI / 2)));
-	mat4_set_translation(&m, vec3_sub(vec3_add(self->position, vec3_mulf(self->dir_up, 10)), vec3_mulf(self->dir_forward, 430)));
-	render_set_model_mat(&m);
-	render_set_depth_write(false);
-	render_set_blend_mode(RENDER_BLEND_NORMAL);
-	// render_set_depth_offset(-32.0);
-	render_set_depth_offset(0.0);
-
-	// DIAMOND
-	uint16_t radius = 64;
-	for (int i = 0; i < 4; i++) {
-		mat4_set_yaw_pitch_roll(
-			&m,
-			vec3_add(g.camera.angle, vec3(0,0,(M_PI / 2) * i))
-		);
-		render_set_model_mat(&m);
-		// northeast
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,250)
-				},
-				{
-					.pos = {thrust_factor*radius, 0, 0},
-					.color = rgba(5,5,255,0)
-				},
-				{
-					.pos = {0, thrust_factor*-radius, 0},
-					.color = rgba(5,5,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-	}
-
-	render_set_blend_mode(RENDER_BLEND_LIGHTER);
-
-	// STAR
-	// long axis
-	uint16_t long_length = 180;
-	uint16_t half_width = 7;
-	uint16_t inner_alpha = 180;
-	vec3_t offset = vec3(0, 0, M_PI / 4);
-	
-	for (int i = 0; i < 2; i++) {
-		mat4_set_yaw_pitch_roll(
-			&m,
-			// vec3_add(g.camera.angle, vec3(0,0,(M_PI / 2) * i))
-			vec3_add(
-				g.camera.angle,
-				vec3_add(offset, vec3(0, 0, M_PI * i))
-				)
-		);
-		render_set_model_mat(&m);
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,inner_alpha)
-				},
-				{
-					.pos = {thrust_factor*long_length, 0, 0},
-					.color = rgba(80,80,255,0)
-				},
-				{
-					.pos = {thrust_factor*half_width, thrust_factor*-half_width, 0},
-					.color = rgba(80,80,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,inner_alpha)
-				},
-				{
-					.pos = {thrust_factor*half_width, thrust_factor*half_width, 0},
-					.color = rgba(80,80,255,0)
-				},
-				{
-					.pos = {thrust_factor*long_length, 0, 0},
-					.color = rgba(80,80,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-	}
-
-	// short axis
-	uint16_t short_length = 80;
-	vec3_t offset_short = vec3(0, 0, (M_PI / 4) * 3);
-	
-	for (int i = 0; i < 2; i++) {
-		mat4_set_yaw_pitch_roll(
-			&m,
-			// vec3_add(g.camera.angle, vec3(80,80,(M_PI / 2) * i))
-			vec3_add(
-				g.camera.angle,
-				vec3_add(offset_short, vec3(0, 0, M_PI * i))
-				)
-		);
-		render_set_model_mat(&m);
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,inner_alpha)
-				},
-				{
-					.pos = {thrust_factor*short_length, 0, 0},
-					.color = rgba(80,80,255,0)
-				},
-				{
-					.pos = {thrust_factor*half_width, thrust_factor*-half_width, 0},
-					.color = rgba(80,80,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,inner_alpha)
-				},
-				{
-					.pos = {thrust_factor*half_width, thrust_factor*half_width, 0},
-					.color = rgba(80,80,255,0)
-				},
-				{
-					.pos = {thrust_factor*short_length, 0, 0},
-					.color = rgba(80,80,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-	}
-
-	// CENTER
-	uint16_t c_radius = 25;
-	for (int i = 0; i < 4; i++) {
-		mat4_set_yaw_pitch_roll(
-			&m,
-			vec3_add(g.camera.angle, vec3(0,0,(M_PI / 2) * i))
-		);
-		render_set_model_mat(&m);
-		// northeast
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(255,255,255,120)
-				},
-				{
-					.pos = {thrust_factor*c_radius, 0, 0},
-					.color = rgba(0,0,255,0)
-				},
-				{
-					.pos = {0, thrust_factor*-c_radius, 0},
-					.color = rgba(0,0,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-	}
-
-	render_set_depth_offset(0.0);
-	render_set_depth_write(true);
-	render_set_blend_mode(RENDER_BLEND_NORMAL);
-}
-
-void ship_draw_flare_psx(ship_t *self) {	
-	// TODO: shimmering?
-	//clamp(vec3_len(self->thrust)/1550.0,0,255)
-
-	// rgba_t color = rgba(0,0,255,clamp(((1+sin(system_time()*20.0))/2.0)*vec3_len(self->thrust)/155.0,90,255));
-	float thrust_factor = clamp(vec3_len(self->thrust)/20000.0,0,1.0);
-	if (self->pilot != g.pilot) {
-		thrust_factor = 1.0;
-	}
-	thrust_factor += clamp(self->angle.x*2, -0.8, 0.0);
-	mat4_t m = mat4_identity();
-	mat4_set_yaw_pitch_roll(&m, vec3_add(g.camera.angle, vec3(0,0,M_PI / 2)));
-	mat4_set_translation(&m, vec3_sub(vec3_add(self->position, vec3_mulf(self->dir_up, 10)), vec3_mulf(self->dir_forward, 430)));
-	render_set_model_mat(&m);
-	render_set_depth_write(false);
-	render_set_blend_mode(RENDER_BLEND_NORMAL);
-	// render_set_depth_offset(-32.0);
-	render_set_depth_offset(0.0);
-
-	// DIAMOND
-	uint16_t radius = 64;
-	for (int i = 0; i < 4; i++) {
-		mat4_set_yaw_pitch_roll(
-			&m,
-			vec3_add(g.camera.angle, vec3(0,0,(M_PI / 2) * i))
-		);
-		render_set_model_mat(&m);
-		// northeast
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,255)
-				},
-				{
-					.pos = {thrust_factor*radius, 0, 0},
-					.color = rgba(5,5,255,0)
-				},
-				{
-					.pos = {0, thrust_factor*-radius, 0},
-					.color = rgba(5,5,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-	}
-
-	render_set_blend_mode(RENDER_BLEND_LIGHTER);
-
-	// STAR
-	// long axis
-	uint16_t long_length = 180;
-	uint16_t short_length = 90;
-	uint16_t half_width = 8;
-	uint16_t half_width_tip = 4;
-	uint16_t inner_alpha = 170;
-	vec3_t offset = vec3(0, 0, M_PI / 4);
-	
-	for (int i = 0; i < 2; i++) {
-		mat4_set_yaw_pitch_roll(
-			&m,
-			// vec3_add(g.camera.angle, vec3(0,0,(M_PI / 2) * i))
-			vec3_add(
-				g.camera.angle,
-				vec3_add(offset, vec3(0, 0, M_PI * i))
-				)
-		);
-		render_set_model_mat(&m);
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, -thrust_factor*half_width, 0},
-					.color = rgba(80,80,255,0)
-				},
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,inner_alpha)
-				},
-				{
-					.pos = {thrust_factor*long_length, -thrust_factor*half_width_tip, 0},
-					.color = rgba(80,80,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,inner_alpha)
-				},
-				{
-					.pos = {thrust_factor*long_length, 0, 0},
-					.color = rgba(80,80,255,0)
-				},
-				{
-					.pos = {thrust_factor*long_length, -thrust_factor*half_width_tip, 0},
-					.color = rgba(80,80,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-		// downside
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,inner_alpha)
-				},
-				{
-					.pos = {0, thrust_factor*half_width, 0},
-					.color = rgba(80,80,255,0)
-				},
-				{
-					.pos = {thrust_factor*long_length, thrust_factor*half_width_tip, 0},
-					.color = rgba(80,80,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,inner_alpha)
-				},
-				{
-					.pos = {thrust_factor*long_length, thrust_factor*half_width_tip, 0},
-					.color = rgba(80,80,255,0)
-				},
-				{
-					.pos = {thrust_factor*long_length, 0, 0},
-					.color = rgba(80,80,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-	}
-
-	// short axis
-	vec3_t offset_short = vec3(0, 0, (M_PI / 4) * 3);
-	
-	for (int i = 0; i < 2; i++) {
-		mat4_set_yaw_pitch_roll(
-			&m,
-			// vec3_add(g.camera.angle, vec3(80,80,(M_PI / 2) * i))
-			vec3_add(
-				g.camera.angle,
-				vec3_add(offset_short, vec3(0, 0, M_PI * i))
-				)
-		);
-		render_set_model_mat(&m);
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, -thrust_factor*half_width, 0},
-					.color = rgba(80,80,255,0)
-				},
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,inner_alpha)
-				},
-				{
-					.pos = {thrust_factor*short_length, -thrust_factor*half_width_tip, 0},
-					.color = rgba(80,80,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,inner_alpha)
-				},
-				{
-					.pos = {thrust_factor*short_length, 0, 0},
-					.color = rgba(80,80,255,0)
-				},
-				{
-					.pos = {thrust_factor*short_length, -thrust_factor*half_width_tip, 0},
-					.color = rgba(80,80,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-		// downside
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,inner_alpha)
-				},
-				{
-					.pos = {0, thrust_factor*half_width, 0},
-					.color = rgba(80,80,255,0)
-				},
-				{
-					.pos = {thrust_factor*short_length, thrust_factor*half_width_tip, 0},
-					.color = rgba(80,80,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(80,80,255,inner_alpha)
-				},
-				{
-					.pos = {thrust_factor*short_length, thrust_factor*half_width_tip, 0},
-					.color = rgba(80,80,255,0)
-				},
-				{
-					.pos = {thrust_factor*short_length, 0, 0},
-					.color = rgba(80,80,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-	}
-
-	// CENTER
-	uint16_t c_radius = 25;
-	for (int i = 0; i < 4; i++) {
-		mat4_set_yaw_pitch_roll(
-			&m,
-			vec3_add(g.camera.angle, vec3(0,0,(M_PI / 2) * i))
-		);
-		render_set_model_mat(&m);
-		// northeast
-		render_push_tris((tris_t) {
-			.vertices = {
-				{
-					.pos = {0, 0, 0},
-					.color = rgba(255,255,255,100)
-				},
-				{
-					.pos = {thrust_factor*c_radius, 0, 0},
-					.color = rgba(0,0,255,0)
-				},
-				{
-					.pos = {0, thrust_factor*-c_radius, 0},
-					.color = rgba(0,0,255,0)
-				},
-			}
-		}, RENDER_NO_TEXTURE);
-	}
-
-	render_set_depth_offset(0.0);
-	render_set_depth_write(true);
-	render_set_blend_mode(RENDER_BLEND_NORMAL);
-}
-
-void ship_draw_player_trail(ship_t *self) {
-	// TODO: shimmering? Check if under the ship and add M_PI offset?
-	//clamp(vec3_len(self->thrust)/1550.0,0,255)
-
-	// rgba_t color = rgba(0,0,255,clamp(((1+sin(system_time()*20.0))/2.0)*vec3_len(self->thrust)/155.0,90,255));
-	// uint16_t random_bright0 = 1 + (int)(system_time() * 30) % 40;
-	// uint16_t random_bright1 = 1 + (int)(system_time() * 30) % 53;
-	float speed_factor = clamp(self->thrust_mag/200.0,0,1.0)*clamp((self->speed-1000)/20000.0,0,1.0);
-	// if (self->pilot != g.pilot) {
-	// 	thrust_factor = 1.0;
-	// }
-	mat4_t *m = &mat4_identity();
-	mat4_set_yaw_pitch_roll(m, vec3(self->angle.x, self->angle.y + 0.05*self->angle.z, 1.0*self->angle.z));
-	mat4_set_translation(m, vec3_sub(vec3_add(self->position, vec3_mulf(self->dir_up, 10)), vec3_mulf(self->dir_forward, 430))); //435
-	render_set_model_mat(m);
-	render_set_depth_write(false);
-	// render_set_blend_mode(RENDER_BLEND_NORMAL);
-	render_set_blend_mode(RENDER_BLEND_LIGHTER);
-	// render_set_depth_offset(-32.0);
-	render_set_depth_offset(0.0);
-
-	uint16_t half_width = 40;
-	uint16_t length = 60 + speed_factor * 120; //120
-	// uint16_t center_alpha = speed_factor * 250; // + ((sin(system_time()*5)+1)/2.0) * 50;
-	// uint16_t outer_rg;
-	// bool hl_upper;
-	// bool hl_lower;
-	// rgba_t border_col = rgba(0,0,255,0);
-	// rgba_t hl_col     = rgba(255,255,255,center_alpha*2);
-	// rgba_t hl_col     = rgba(255,255,255,clamp(-1.0+speed_factor*5, 0.0, 1.0)*255);
-	// rgba_t center_col = rgba(80,80,150,center_alpha);
-	
-	// if bright spot index == i,	we highlight center vertex upper
-	// if bright spot index == i+1, we highlight center vertex lower
-	// Is there a smarter way to do this? Definitely.
-	// TODO: stop when out of sight
-	int loc_0;
-	int loc_1;
-	int alpha;
-	for (int j = 0; j < 2; j++) {
-		if (j) {
-			mat4_set_yaw_pitch_roll(m, vec3(self->angle.x, self->angle.y, M_PI+self->angle.z));
-			render_set_model_mat(m);
-		}
-		for (int i = 0; i < 10; i++) {
-			loc_0 = (NUM_SHIP_TRAIL_POINTS + self->trail_buffer_loc - i) % NUM_SHIP_TRAIL_POINTS;
-			loc_1 = (NUM_SHIP_TRAIL_POINTS + self->trail_buffer_loc - i - 1) % NUM_SHIP_TRAIL_POINTS;
-			alpha = (1.0 - ((float)i/(NUM_SHIP_TRAIL_POINTS-2))) * 255;
-
-			// vertices
-			vertex_t v_left_0 = self->trail_buffer[loc_0].left;
-			vertex_t v_center_0 = self->trail_buffer[loc_0].center;
-			vertex_t v_right_0 = self->trail_buffer[loc_0].right;
-			vertex_t v_left_1 = self->trail_buffer[loc_1].left;
-			vertex_t v_center_1 = self->trail_buffer[loc_1].center;
-			vertex_t v_right_1 = self->trail_buffer[loc_1].right;
-			//
-			// hl_upper = (i == random_bright0 || i == random_bright1);
-			// hl_lower = (i+1 == random_bright0 || i+1 == random_bright1);
-			//
-			// if (i == 0 && hl_lower) {
-			// 	hl_upper = true;
-			// }
-
-			// left side
-			render_push_tris((tris_t) {
-				.vertices = {
-					{
-						.pos = {-half_width, 0, -i*length},
-						.color = v_left_0.color
-					},
-					{
-						.pos = {-half_width, 0, -length-i*length},
-						.color = v_left_1.color
-					},
-					{
-						// center vertex upper
-						.pos = {0, 0, -i*length},
-						.color = v_center_0.color
-					},
-				}
-			}, RENDER_NO_TEXTURE);
-			render_push_tris((tris_t) {
-				.vertices = {
-					{
-						// center vertex upper
-						.pos = {0, 0, -i*length},
-						.color = v_center_0.color
-					},
-					{
-						.pos = {-half_width, 0, -length-i*length},
-						.color = v_left_1.color
-					},
-					{
-						// center vertex lower
-						.pos = {0, 0, -length-i*length},
-						.color = v_center_1.color
-					},
-				}
-			}, RENDER_NO_TEXTURE);
-
-			// right side
-			render_push_tris((tris_t) {
-				.vertices = {
-					{
-						// center vertex upper
-						.pos = {0, 0, -i*length},
-						.color = v_center_0.color
-					},
-					{
-						// center vertex lower
-						.pos = {0, 0, -length-i*length},
-						.color = v_center_1.color
-					},
-					{
-						.pos = {half_width, 0, -i*length},
-						.color = v_right_0.color
-					},
-				}
-			}, RENDER_NO_TEXTURE);
-			render_push_tris((tris_t) {
-				.vertices = {
-					{
-						.pos = {half_width, 0, -i*length},
-						.color = v_right_0.color
-					},
-					{
-						// center vertex lower
-						.pos = {0, 0, -length-i*length},
-						.color = v_center_1.color
-					},
-					{
-						.pos = {half_width, 0, -length-i*length},
-						.color = v_right_1.color
-					},
-				}
-			}, RENDER_NO_TEXTURE);
-		}
-	}
-
-	render_set_depth_offset(0.0);
-	render_set_depth_write(true);
-	render_set_blend_mode(RENDER_BLEND_NORMAL);
 }
 
 void ship_draw_shadow(ship_t *self) {	
@@ -1101,146 +485,6 @@ void ship_update_unit_vectors(ship_t *self) {
 	self->dir_up.x = (cy * sz) - (sy * sx * cz);
 	self->dir_up.y = -(cx * cz);
 	self->dir_up.z = (sy * sz) + (cy * sx * cz);
-}
-
-void ship_draw_trail(ship_t *self) {
-	mat4_t *m = &mat4_identity();
-	render_set_model_mat(m);
-	// mat4_set_yaw_pitch_roll(m, vec3(self->angle.x, self->angle.y, self->angle.z));
-	// mat4_set_translation(m, ); //435
-	render_set_depth_write(false);
-	// render_set_blend_mode(RENDER_BLEND_NORMAL);
-	render_set_blend_mode(RENDER_BLEND_LIGHTER);
-	// render_set_depth_offset(-32.0);
-	render_set_depth_offset(0.0);
-	int loc_0;
-	int loc_1;
-	int alpha;
-	float speed_factor = clamp((self->speed-1000)/1000.0,0,1.0);
-	// printf("--start trail draw--\n");
-	for (int i = 0; i < NUM_SHIP_TRAIL_POINTS - 1; i++) {
-		loc_0 = (NUM_SHIP_TRAIL_POINTS + self->trail_buffer_loc - i) % NUM_SHIP_TRAIL_POINTS;
-		loc_1 = (NUM_SHIP_TRAIL_POINTS + self->trail_buffer_loc - i - 1) % NUM_SHIP_TRAIL_POINTS;
-		alpha = speed_factor*(1.0 - ((float)i/(NUM_SHIP_TRAIL_POINTS-2))) * 255;
-		// alpha = 255;
-		// printf("alpha: %d\n", alpha);
-		// printf("locations: %d, %d\n", loc_0, loc_1);
-
-		// vertices
-		vertex_t v_left_0 = self->trail_buffer[loc_0].left;
-		vertex_t v_center_0 = self->trail_buffer[loc_0].center;
-		vertex_t v_right_0 = self->trail_buffer[loc_0].right;
-		vertex_t v_left_1 = self->trail_buffer[loc_1].left;
-		vertex_t v_center_1 = self->trail_buffer[loc_1].center;
-		vertex_t v_right_1 = self->trail_buffer[loc_1].right;
-
-		// alpha
-		v_center_0.color.a = alpha;
-		v_center_1.color.a = alpha;
-		
-		// TODO: stop when out of sight
-		// left side
-		render_push_tris((tris_t) {
-			.vertices = {
-				v_left_0,
-				v_left_1,
-				v_center_0
-			}
-		}, RENDER_NO_TEXTURE);
-		render_push_tris((tris_t) {
-			.vertices = {
-				v_center_0,
-				v_left_1,
-				v_center_1
-			}
-		}, RENDER_NO_TEXTURE);
-		// left side under
-		render_push_tris((tris_t) {
-			.vertices = {
-				v_left_0,
-				v_center_0,
-				v_left_1
-			}
-		}, RENDER_NO_TEXTURE);
-		render_push_tris((tris_t) {
-			.vertices = {
-				v_center_0,
-				v_center_1,
-				v_left_1
-			}
-		}, RENDER_NO_TEXTURE);
-		// right side
-		render_push_tris((tris_t) {
-			.vertices = {
-				v_center_0,
-				v_center_1,
-				v_right_0
-			}
-		}, RENDER_NO_TEXTURE);
-		render_push_tris((tris_t) {
-			.vertices = {
-				v_right_0,
-				v_center_1,
-				v_right_1
-			}
-		}, RENDER_NO_TEXTURE);
-		// right side under
-		render_push_tris((tris_t) {
-			.vertices = {
-				v_center_0,
-				v_right_0,
-				v_center_1
-			}
-		}, RENDER_NO_TEXTURE);
-		render_push_tris((tris_t) {
-			.vertices = {
-				v_right_0,
-				v_right_1,
-				v_center_1
-			}
-		}, RENDER_NO_TEXTURE);
-	}
-	render_set_depth_offset(0.0);
-	render_set_depth_write(true);
-	render_set_blend_mode(RENDER_BLEND_NORMAL);
-}
-
-void ship_update_trail(ship_t *self) {
-	// fine tuning
-	uint16_t half_width = 40;
-	float speed_factor = clamp((self->speed-1000)/20000.0,0,1.0);
-
-	if (self->trail_last_incremented >= 1.0/30) {
-		self->trail_buffer_loc = (self->trail_buffer_loc + 1) % NUM_SHIP_TRAIL_POINTS;
-		self->trail_last_incremented = 0;
-
-		// vertex color
-		bool random_bright = (rand_int(0, 8) == 0);
-		self->trail_buffer[self->trail_buffer_loc].left.color = (random_bright) ? rgba(255,255,255,speed_factor*0) : rgba(0,0,255,0);
-		self->trail_buffer[self->trail_buffer_loc].center.color = (random_bright) ? rgba(255,255,255,speed_factor*250) : rgba(80,80,255,speed_factor*150);
-		self->trail_buffer[self->trail_buffer_loc].right.color = (random_bright) ? rgba(255,255,255,speed_factor*0) : rgba(0,0,255,0);
-	} else {
-		self->trail_last_incremented += system_tick();
-	}
-
-	mat4_t *m = &mat4_identity();
-	mat4_set_yaw_pitch_roll(m, vec3(self->angle.x, self->angle.y, self->angle.z));
-	mat4_set_translation(m, vec3_sub(vec3_add(self->position, vec3_mulf(self->dir_up, 10)), vec3_mulf(self->dir_forward, 430))); //435
-	
-	vec3_t left = vec3_transform(vec3(-half_width, 0, 0), m);
-	vec3_t center = vec3_transform(vec3(0, 0, 0), m);
-	vec3_t right = vec3_transform(vec3(half_width, 0, 0), m);
-
-	// printf("trail buffer loc left pos xyz: %f, %f. %f\n", left.x, left.y, left.z);
-	// printf("trail buffer loc center pos xyz: %f, %f. %f\n", center.x, center.y, center.z);
-	// printf("trail buffer loc right pos xyz: %f, %f. %f\n", right.x, right.y, right.z);
-
-	// vertex position
-	self->trail_buffer[self->trail_buffer_loc].left.pos = left;
-	self->trail_buffer[self->trail_buffer_loc].center.pos = center;
-	self->trail_buffer[self->trail_buffer_loc].right.pos = right;
-
-	// printf("trail buffer loc: %d\n", self->trail_buffer_loc);
 }
 
 void ship_update(ship_t *self) {
@@ -1403,8 +647,6 @@ void ship_update(ship_t *self) {
 		section_num_from_line += g.track.section_count;
 	}
 	self->total_section_num = self->lap * g.track.section_count + section_num_from_line;
-
-	ship_update_trail(self);
 }
 
 vec3_t ship_cockpit(ship_t *self) {
@@ -1450,30 +692,22 @@ void ship_resolve_wing_collision(ship_t *self, track_face_t *face, float directi
 	vec3_t to_center = vec3_normalize(vec3_sub(self->section->center, self->position));
 	float angle = vec3_angle(collision_vector, self->dir_forward);
 
-	if (save.mode_2097) {
-		self->velocity = vec3_mulf(self->velocity, 0.95);
-		self->position = vec3_add(self->position, vec3_mulf(to_center, fabs(collision_dot) * 32));
-		// self->velocity = vec3_add(self->velocity, vec3_mulf(face->normal, 4096 * 1.0 * !save.mode_2097)); // div by 4096?
-		// self->velocity = vec3_add(self->velocity, vec3_mulf(to_center, 256 * !save.mode_2097));
-		self->velocity = vec3_add(self->velocity, vec3_mulf(to_center, fabs(collision_dot) * 2048));
-	} else {
-		self->velocity = vec3_reflect(self->velocity, face->normal, 2);
-		// float angle = vec3_angle(collision_vector, self->velocity);
-		// float speedf = self->speed * 0.00015;
-		self->velocity = vec3_mulf(self->velocity, 0.63); //0.5
-		// self->position = vec3_sub(self->position, vec3_mulf(self->velocity, 0.015625)); // system_tick?
-		self->position = vec3_sub(self->position, vec3_mulf(self->velocity, system_tick()));
-		self->velocity = vec3_add(self->velocity, vec3_mulf(face->normal, 4096.0)); // div by 4096?
-		// self->velocity = vec3_sub(self->velocity, vec3_mulf(self->velocity, 0.5));
-		self->velocity = vec3_add(self->velocity, vec3_mulf(to_center, 256.0));
-		self->velocity = vec3_add(self->velocity, vec3_mulf(to_center, fabs(collision_dot) * 2048));
-	}
+	self->velocity = vec3_reflect(self->velocity, face->normal, 2);
+	// float angle = vec3_angle(collision_vector, self->velocity);
+	// float speedf = self->speed * 0.00015;
+	self->velocity = vec3_mulf(self->velocity, 0.63); //0.5
+	// self->position = vec3_sub(self->position, vec3_mulf(self->velocity, 0.015625)); // system_tick?
+	self->position = vec3_sub(self->position, vec3_mulf(self->velocity, system_tick()));
+	self->velocity = vec3_add(self->velocity, vec3_mulf(face->normal, 4096.0)); // div by 4096?
+	// self->velocity = vec3_sub(self->velocity, vec3_mulf(self->velocity, 0.5));
+	self->velocity = vec3_add(self->velocity, vec3_mulf(to_center, 256.0));
+	self->velocity = vec3_add(self->velocity, vec3_mulf(to_center, fabs(collision_dot) * 2048));
+
 	// printf("c angle: %f\n", angle);
 	// printf("c dot  : %f\n", collision_dot);
 
 	// float magnitude = (fabsf(angle) * self->speed) * M_PI / (4096 * 16.0); // (6 velocity shift, 12 angle shift?)
 	float magnitude = (fabsf(angle) * self->speed) * M_PI / 4096.0; // orig was too weak, but jnmartin84 added too much?
-	magnitude *= !save.mode_2097;
 
 	// wing roll
 	vec3_t wing_pos;
@@ -1486,14 +720,6 @@ void ship_resolve_wing_collision(ship_t *self, track_face_t *face, float directi
 		wing_pos = vec3_sub(self->position, vec3_mulf(vec3_sub(self->dir_right, self->dir_forward), 256)); // >> 4??
 	}
 
-	// wing yaw 2097
-	if (save.mode_2097 && direction > 0) {
-		self->angular_velocity.y += 0.1;
-	}
-	else if (save.mode_2097) {
-		self->angular_velocity.y -= 0.1;	
-	}
-
 	if (self->last_impact_time > 0.2) {
 		self->last_impact_time = 0;
 		sfx_t *sfx = sfx_play_at(SFX_IMPACT, wing_pos, vec3(0, 0, 0), 0.1); // volume 1, TODO: scale with trauma?
@@ -1504,16 +730,6 @@ void ship_resolve_wing_collision(ship_t *self, track_face_t *face, float directi
 			camera_add_shake(&g.camera, 0.15);
 		}
 	}
-
-	// 2097 scrape particles
-	// if (save.mode_2097) {
-	// 	int ptype = PARTICLE_TYPE_FIRE_WHITE;
-	// 	if (rand() % 20) {
-	// 		ptype = PARTICLE_TYPE_SMOKE;
-	// 	}
-	// 	particles_spawn(self->position, ptype, vec3_mulf(self->velocity, 0.02), 500.0);
-	// 	// printf("particles!\n");
-	// }
 }
 
 void ship_resolve_nose_collision(ship_t *self, track_face_t *face, float direction) {

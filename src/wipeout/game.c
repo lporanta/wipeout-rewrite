@@ -174,72 +174,6 @@ const game_def_t def = {
 				[RACE_CLASS_RAPIER] = {.path = "wipeout/track14/", .start_line_pos = 27, .behind_speed = 500, .spread_base = 40, .spread_factor = 11, .sky_y_offset =     0},
 			}
 		},
-		[CIRCUT_TALONS_REACH] = {
-			.name = "TALONS REACH",
-			.is_bonus_circut = true,
-			.settings = {
-				// impossible to align start pos correctly?
-				[RACE_CLASS_VENOM]  = {.path = "wipeout/track201/", .start_line_pos = 11, .behind_speed = 200, .spread_base = 2, .spread_factor = 11, .sky_y_offset = -2000},
-				[RACE_CLASS_RAPIER] = {.path = "wipeout/track201/", .start_line_pos = 11, .behind_speed = 400, .spread_base = 2, .spread_factor = 11, .sky_y_offset = -2000},
-			}
-		},
-		[CIRCUT_SAGARMATHA] = {
-			.name = "SAGARMATHA",
-			.is_bonus_circut = true,
-			.settings = {
-				// impossible to align start pos correctly?
-				[RACE_CLASS_VENOM]  = {.path = "wipeout/track208/", .start_line_pos = 11, .behind_speed = 200, .spread_base = 2, .spread_factor = 11, .sky_y_offset = -2000},
-				[RACE_CLASS_RAPIER] = {.path = "wipeout/track208/", .start_line_pos = 11, .behind_speed = 400, .spread_base = 2, .spread_factor = 11, .sky_y_offset = -2000},
-			}
-		},
-		[CIRCUT_VALPARAISO] = {
-			.name = "VALPARAISO",
-			.is_bonus_circut = true,
-			.settings = {
-				[RACE_CLASS_VENOM]  = {.path = "wipeout/track213/", .start_line_pos = 15, .behind_speed = 200, .spread_base = 2, .spread_factor = 11, .sky_y_offset = -2000},
-				[RACE_CLASS_RAPIER] = {.path = "wipeout/track213/", .start_line_pos = 15, .behind_speed = 400, .spread_base = 2, .spread_factor = 11, .sky_y_offset = -2000},
-			}
-		},
-		[CIRCUT_PHENITIA_PARK] = {
-			.name = "PHENITIA PARK",
-			.is_bonus_circut = true,
-			.settings = {
-				[RACE_CLASS_VENOM]  = {.path = "wipeout/track220/", .start_line_pos = 24, .behind_speed = 200, .spread_base = 20, .spread_factor = 11, .sky_y_offset = -1000},
-				[RACE_CLASS_RAPIER] = {.path = "wipeout/track220/", .start_line_pos = 24, .behind_speed = 350, .spread_base = 20, .spread_factor = 11, .sky_y_offset = -1000},
-			}
-		},
-		[CIRCUT_GARE_D_EUROPA] = {
-			.name = "GARE D EUROPA",
-			.is_bonus_circut = true,
-			.settings = {
-				[RACE_CLASS_VENOM]  = {.path = "wipeout/track202/", .start_line_pos = 24, .behind_speed = 200, .spread_base = 20, .spread_factor = 11, .sky_y_offset = -1000},
-				[RACE_CLASS_RAPIER] = {.path = "wipeout/track202/", .start_line_pos = 24, .behind_speed = 350, .spread_base = 20, .spread_factor = 11, .sky_y_offset = -1000},
-			}
-		},
-		[CIRCUT_ODESSA_KEYS] = {
-			.name = "ODESSA KEYS",
-			.is_bonus_circut = true,
-			.settings = {
-				[RACE_CLASS_VENOM]  = {.path = "wipeout/track217/", .start_line_pos = 12, .behind_speed = 200, .spread_base = 40, .spread_factor = 11, .sky_y_offset = -4000},
-				[RACE_CLASS_RAPIER] = {.path = "wipeout/track217/", .start_line_pos = 12, .behind_speed = 400, .spread_base = 40, .spread_factor = 11, .sky_y_offset = -4000},
-			}
-		},
-		[CIRCUT_VOSTOK_ISLAND] = {
-			.name = "VOSTOK ISLAND",
-			.is_bonus_circut = true,
-			.settings = {
-				[RACE_CLASS_VENOM]  = {.path = "wipeout/track206/", .start_line_pos = 27, .behind_speed = 200, .spread_base = 40, .spread_factor = 11, .sky_y_offset = -3000},
-				[RACE_CLASS_RAPIER] = {.path = "wipeout/track206/", .start_line_pos = 27, .behind_speed = 500, .spread_base = 40, .spread_factor = 11, .sky_y_offset = -3000},
-			}
-		},
-		[CIRCUT_SPILSKINANKE] = {
-			.name = "SPILSKINANKE",
-			.is_bonus_circut = true,
-			.settings = {
-				[RACE_CLASS_VENOM]  = {.path = "wipeout/track207/", .start_line_pos = 27, .behind_speed = 200, .spread_base = 40, .spread_factor = 11, .sky_y_offset = -3000},
-				[RACE_CLASS_RAPIER] = {.path = "wipeout/track207/", .start_line_pos = 27, .behind_speed = 500, .spread_base = 40, .spread_factor = 11, .sky_y_offset = -3000},
-			}
-		},
 	},
 	.music = {
 		{.path = "wipeout/music/track01.qoa", .name = "CAIRODROME"},
@@ -253,17 +187,6 @@ const game_def_t def = {
 		{.path = "wipeout/music/track09.qoa", .name = "AFRO RIDE"},
 		{.path = "wipeout/music/track10.qoa", .name = "CHEMICAL BEATS"},
 		{.path = "wipeout/music/track11.qoa", .name = "WIPEOUT"},
-		{.path = "wipeout/music/track201.qoa", .name = "WE HAVE EXPLOSIVE"},
-		{.path = "wipeout/music/track202.qoa", .name = "LANDMASS"},
-		{.path = "wipeout/music/track203.qoa", .name = "ATOM BOMB"},
-		{.path = "wipeout/music/track204.qoa", .name = "V SIX"},
-		{.path = "wipeout/music/track205.qoa", .name = "DUST UP BEATS"},
-		{.path = "wipeout/music/track206.qoa", .name = "LOOPS OF FURY"},
-		{.path = "wipeout/music/track207.qoa", .name = "THE THIRD SEQUENCE"},
-		{.path = "wipeout/music/track208.qoa", .name = "TIN THERE (UNDERWORLD EDIT)"},
-		{.path = "wipeout/music/track209.qoa", .name = "FIRESTARTER (INSTRUMENTAL)"},
-		{.path = "wipeout/music/track210.qoa", .name = "CANADA"},
-		{.path = "wipeout/music/track211.qoa", .name = "BODY IN MOTION"},
 	},
 	.credits = {
 		"#MANAGING DIRECTORS",
@@ -617,11 +540,7 @@ void game_init(void) {
 	global_mem_mark = mem_mark();
 
 	sfx_music_mode(SFX_MUSIC_PAUSED);
-	if (save.mode_2097) {
-		sfx_music_play(rand_int(11, len(def.music)));
-	} else {
-		sfx_music_play(rand_int(0, 11));
-	}
+	sfx_music_play(rand_int(0, len(def.music)));
 
 	// System binds; always fixed
 	// Keyboard
@@ -676,8 +595,8 @@ void game_init(void) {
 		}
 	}
 
-	// game_set_scene(GAME_SCENE_INTRO);
-	game_set_scene(GAME_SCENE_TITLE); //testing skip video
+	game_set_scene(GAME_SCENE_INTRO);
+	// game_set_scene(GAME_SCENE_TITLE); //testing skip video
 }
 
 void game_set_scene(game_scene_t scene) {

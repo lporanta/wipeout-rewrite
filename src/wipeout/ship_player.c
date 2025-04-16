@@ -296,9 +296,7 @@ void ship_player_update_race(ship_t *self) {
 	// WEAPON_TYPE_TURBO     9
 	// WEAPON_TYPE_MAX      10
 
-	self->weapon_type = WEAPON_TYPE_TURBO; // Test weapon
-
-	// self->weapon_type = WEAPON_TYPE_MISSILE; // Test weapon
+	// self->weapon_type = WEAPON_TYPE_TURBO; // Test weapon
 
 	if (input_pressed(A_FIRE) && self->weapon_type != WEAPON_TYPE_NONE) {
 		if (flags_not(self->flags, SHIP_SHIELDED)) {
@@ -384,12 +382,6 @@ void ship_player_update_race(ship_t *self) {
 
 		// Collision with floor
 		if (height <= 0) {
-			// Move back, some magic numbers here
-			if (save.mode_2097) {
-				self->position = vec3_add(self->position, vec3_mulf(face->normal, 0.015625 * 120 * system_tick()));
-				// self->position = vec3_sub(self->position, vec3_mulf(self->velocity, 0.015625 * 120 * system_tick()));
-			}
-
 			if (self->last_impact_time > 0.2) {
 				self->last_impact_time = 0;
 				sfx_play_at(SFX_IMPACT, self->position, vec3(0,0,0), 0.2);
@@ -402,15 +394,10 @@ void ship_player_update_race(ship_t *self) {
 		}
 		else if (height < 30) {
 			self->velocity = vec3_add(self->velocity, vec3_mulf(face->normal, 64.0 * 30 * system_tick())); //4096
-			// self->velocity = vec3_add(self->velocity, vec3_mulf(face->normal, !save.mode_2097 * 4096.0 * 30 * system_tick()));
 		}
 
 		if (height < 50) {
 			height = 50;
-		}
-
-		if (save.mode_2097 && height < 100) {
-			self->velocity = vec3_reflect(self->velocity, face->normal, 0.5);
 		}
 
 		// Calculate acceleration

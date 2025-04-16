@@ -27,19 +27,19 @@
 
 // Timings
 
-// #define UPDATE_TIME_INITIAL   (200.0 * (1.0/30.0))
-// #define UPDATE_TIME_THREE     (150.0 * (1.0/30.0))
-// #define UPDATE_TIME_RACE_VIEW (100.0 * (1.0/30.0))
-// #define UPDATE_TIME_TWO       (100.0 * (1.0/30.0))
-// #define UPDATE_TIME_ONE       ( 50.0 * (1.0/30.0))
-// #define UPDATE_TIME_GO        (  0.0 * (1.0/30.0))
+#define UPDATE_TIME_INITIAL   (200.0 * (1.0/30.0))
+#define UPDATE_TIME_THREE     (150.0 * (1.0/30.0))
+#define UPDATE_TIME_RACE_VIEW (100.0 * (1.0/30.0))
+#define UPDATE_TIME_TWO       (100.0 * (1.0/30.0))
+#define UPDATE_TIME_ONE       ( 50.0 * (1.0/30.0))
+#define UPDATE_TIME_GO        (  0.0 * (1.0/30.0))
 // FIXME: timings for testing
-#define UPDATE_TIME_INITIAL   (5.0 * (1.0/30.0))
-#define UPDATE_TIME_THREE     (4.0 * (1.0/30.0))
-#define UPDATE_TIME_RACE_VIEW (3.0 * (1.0/30.0))
-#define UPDATE_TIME_TWO       (2.0 * (1.0/30.0))
-#define UPDATE_TIME_ONE       (1.0 * (1.0/30.0))
-#define UPDATE_TIME_GO        (0.0 * (1.0/30.0))
+// #define UPDATE_TIME_INITIAL   (5.0 * (1.0/30.0))
+// #define UPDATE_TIME_THREE     (4.0 * (1.0/30.0))
+// #define UPDATE_TIME_RACE_VIEW (3.0 * (1.0/30.0))
+// #define UPDATE_TIME_TWO       (2.0 * (1.0/30.0))
+// #define UPDATE_TIME_ONE       (1.0 * (1.0/30.0))
+// #define UPDATE_TIME_GO        (0.0 * (1.0/30.0))
 
 // Physics conversion
 
@@ -60,8 +60,6 @@
 #define SHIP_VELOCITY_SHIFT	6
 #define SHIP_TRACK_MAGNET	64 // 64
 #define SHIP_TRACK_FLOAT 	256
-
-#define NUM_SHIP_TRAIL_POINTS 	12
 
 
 #define SHIP_PITCH_ACCEL    NTSC_ACCELERATION(ANGLE_NORM_TO_RADIAN(FIXED_TO_FLOAT(PITCH_VELOCITY(30))))
@@ -139,7 +137,6 @@ typedef struct ship_t {
 
 	mat4_t mat;
 	Object *model;
-	Object *model2;
 	Object *collision_model;
 	uint16_t shadow_texture;
 
@@ -158,15 +155,6 @@ typedef struct ship_t {
 	sfx_t *sfx_turbulence;
 	sfx_t *sfx_shield;
 
-	// Trail
-	float trail_last_incremented;
-	uint8_t trail_buffer_loc;
-	struct {
-		vertex_t left;
-		vertex_t center;
-		vertex_t right;
-	} trail_buffer[NUM_SHIP_TRAIL_POINTS];
-
 } ship_t;
 
 void ships_load(void);
@@ -182,10 +170,6 @@ void ship_draw(ship_t *self);
 void ship_draw_shadow(ship_t *self);
 void ship_draw_flare(ship_t *self);
 void ship_draw_flare_psx(ship_t *self);
-
-void ship_draw_player_trail(ship_t *self);
-void ship_draw_trail(ship_t *self);
-void ship_update_trail(ship_t *self);
 
 void ship_update(ship_t *self);
 void ship_update_unit_vectors(ship_t *self);
