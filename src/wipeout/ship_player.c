@@ -179,24 +179,20 @@ void ship_player_update_race(ship_t *self) {
 	// Analog controller gaming used to feel like "balancing an egg"
 	// Now we add angular acceleration only when angular velocity is
 	// smaller than the max rate scaled by the analog input
-	// TLDR: seems to work well and intuitively
-	// TODO: system_tick ???
-	float input_state_left = input_state(A_LEFT);
-	float input_state_right = input_state(A_RIGHT);
-	if (input_state_left) {
-		if (self->angular_velocity.y >= 0 && self->angular_velocity.y < self->turn_rate_max*input_state_left) {
-			self->angular_acceleration.y += input_state_left * self->turn_rate;
+	if (input_state(A_LEFT)) {
+		if (self->angular_velocity.y >= 0 && self->angular_velocity.y < self->turn_rate_max * input_state(A_LEFT)) {
+			self->angular_acceleration.y += input_state(A_LEFT) * self->turn_rate;
 		}
 		else if (self->angular_velocity.y < 0) {
-			self->angular_acceleration.y += input_state_left * self->turn_rate * 2;
+			self->angular_acceleration.y += input_state(A_LEFT) * self->turn_rate * 2;
 		}
 	}
-	else if (input_state_right) {
-		if (self->angular_velocity.y <= 0 && self->angular_velocity.y > -self->turn_rate_max*input_state_right) {
-			self->angular_acceleration.y -= input_state_right * self->turn_rate;
+	else if (input_state(A_RIGHT)) {
+		if (self->angular_velocity.y <= 0 && self->angular_velocity.y > -self->turn_rate_max * input_state(A_RIGHT)) {
+			self->angular_acceleration.y -= input_state(A_RIGHT) * self->turn_rate;
 		}
 		else if (self->angular_velocity.y > 0) {
-			self->angular_acceleration.y -= input_state_right * self->turn_rate * 2;
+			self->angular_acceleration.y -= input_state(A_RIGHT) * self->turn_rate * 2;
 		}
 	}
 
