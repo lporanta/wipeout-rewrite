@@ -9,11 +9,7 @@ This is a fork of the Phoboslab re-implementation of the 1995 PSX game wipEout w
 * FOV options
 * optional PSX polygon warp
 
-Play here: https://phoboslab.org/wipegame/
-
-More info in: https://phoboslab.org/log/2023/08/rewriting-wipeout
-
-⚠️ Work in progress. Expect bugs.
+⚠️ Work in progress.
 
 # Building
 
@@ -257,48 +253,3 @@ Optionally, if you want to use a game controller that may not be supported by SD
 
 
 
-# Ideas for improvements
-
-PRs Welcome.
-
-## Not yet implemented
-
-Some things from the original game are not yet implemented in this rewrite. This includes
-
-- screen shake effect
-- game-end animations, formerly `Spline.cpp` (the end messages are just shown over the attract mode cameras)
-- reverb for sfx and music when there's more than 4 track faces (tunnels and such)
-- some more? grep the source for `TODO` and `FIXME`
-
-## Gameplay, Visuals
-
-- less punishing physics for ship vs. ship collisions
-- less punishing physics for sideways ship vs. track collisions (i.e. wall grinding like in newer wipEouts)
-- somehow resolve the issue of inevitably running into an enemy that you just shot
-- add additional external view that behaves more like in modern racing games
-- dynamic lighting on ships
-- the scene geometry could use some touch-ups to make an infinite draw distance option less awkward
-- increase FOV when going over a boost
-- better menu models for game exit and video options
-- gamepad analog input feels like balancing an egg
-- fix collision issues on junctions (also present in the original)
-
-## Technical
-
-- implement frustum culling for scene geometry, the track and ships. Currently everything within the fadeout radius is drawn.
-- put all static geometry into a GPU-side buffer. Currently all triangles are constructed at draw time. Uploading geometry is complicated a bit by the fact that some scene animations and the ship's exhaust need to update geometry for each frame.
-- the menu system is... not great. It's better than the 5000 lines of spaghetti that it was before, but the different layouts need a lot of `if`s
-- the save data is just dumping the whole struct on disk. A textual format would be preferable.
-- since this whole thing is relying on some custom assembled assets anyway, maybe all SFX should be in QOA format too (like the music). Or switch everything to Vorbis.
-- a lot of functions assume that there's just one player. This needs to be fixed for a potential splitscreen mode.
-
-
-# License
-
-There is none. This code may or may not be based on the source code of the PC (ATI-Rage) version that was leaked in 2022. If it were, it would probably violate copyright law, but it may also fall under fair use ¯\\\_(ツ)\_/¯
-
-Working with this source code is probably fine, considering that this game was originally released 28 years ago (in 1995), that the current copyright holders historically didn't care about any wipEout related files or code being available on the net and that the game is currently not purchasable in any shape or form.
-
-In any case, you may NOT use this source code in a commercial release. A commercial release includes hosting it on a website that shows any forms of advertising.
-
-PS.: Hey Sony! If you're reading this, I would love to work on a proper, officially sanctioned remaster. Please get in touch <3
