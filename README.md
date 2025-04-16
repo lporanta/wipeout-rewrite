@@ -1,10 +1,17 @@
 # wipEout Rewrite
 
-This is a re-implementation of the 1995 PSX game wipEout.
+This is a fork of the Phoboslab re-implementation of the 1995 PSX game wipEout with additional features.
+
+* analog controller support
+* rumble
+* dynamic lighting
+* collisions closer to the original PSX version
+* FOV options
+* PSX polygon warp
 
 Play here: https://phoboslab.org/wipegame/
 
-More info in my blog: https://phoboslab.org/log/2023/08/rewriting-wipeout
+More info in: https://phoboslab.org/log/2023/08/rewriting-wipeout
 
 ⚠️ Work in progress. Expect bugs.
 
