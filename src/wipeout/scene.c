@@ -65,7 +65,7 @@ void scene_load(const char *base_path, float sky_y_offset) {
 
 	Object *obj = scene_objects;
 	while (obj) {
-		printf("load obj: %s (%d, %d, %d)\n", obj->name, obj->origin.x, obj->origin.y, obj->origin.z);
+		// printf("load obj: %s (%d, %d, %d)\n", obj->name, obj->origin.x, obj->origin.y, obj->origin.z);
 		mat4_set_translation(&obj->mat, obj->origin);
 
 		if (str_starts_with(obj->name, "start")) {

@@ -15,11 +15,9 @@ typedef struct {
 	float x, y;
 } vec2_t;
 
-
 typedef struct {
 	int32_t x, y;
 } vec2i_t;
-
 
 typedef struct {
 	float x, y, z;
@@ -74,7 +72,6 @@ static inline vec2i_t vec2i_mulf(vec2i_t a, float f) {
 		a.y * f
 	);
 }
-
 
 static inline vec3_t vec3_add(vec3_t a, vec3_t b) {
 	return vec3(

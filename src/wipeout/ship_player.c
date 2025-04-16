@@ -16,7 +16,6 @@
 #include "../utils.h"
 #include "scene.h"
 
-
 #include "../input.h"
 #include "../system.h"
 
@@ -140,7 +139,6 @@ void ship_player_update_intro_general(ship_t *self) {
 
 	ship_player_update_sfx(self);
 }
-
 
 void ship_player_update_race(ship_t *self) {
 	if (flags_not(self->flags, SHIP_RACING)) {
@@ -350,7 +348,8 @@ void ship_player_update_race(ship_t *self) {
 			vec3_angle(vec2, vec3) +
 			vec3_angle(vec3, vec1) +
 			vec3_angle(vec1, vec0);
-		if (angle < M_PI * 2 - 0.01) {
+		// if (angle < M_PI * 2 - 0.01) {
+		if (angle < (0.91552734375 * M_PI * 2)) {
 			flags_add(self->flags, SHIP_FLYING);
 		}
 	}
@@ -398,10 +397,11 @@ void ship_player_update_race(ship_t *self) {
 			}
 			self->velocity = vec3_reflect(self->velocity, face->normal, 2);
 			self->velocity = vec3_sub(self->velocity, vec3_mulf(self->velocity, 0.125));
-			self->velocity = vec3_sub(self->velocity, face->normal);
+			// self->velocity = vec3_sub(self->velocity, face->normal);
+			self->velocity = vec3_sub(self->velocity, vec3_mulf(face->normal, 64.0 * 30 * system_tick()));
 		}
 		else if (height < 30) {
-			self->velocity = vec3_add(self->velocity, vec3_mulf(face->normal, 4096.0 * 30 * system_tick()));
+			self->velocity = vec3_add(self->velocity, vec3_mulf(face->normal, 64.0 * 30 * system_tick())); //4096
 			// self->velocity = vec3_add(self->velocity, vec3_mulf(face->normal, !save.mode_2097 * 4096.0 * 30 * system_tick()));
 		}
 
@@ -469,6 +469,8 @@ void ship_player_update_race(ship_t *self) {
 			self->temp_target = vec3_mulf(vec3_add(landing->center, landing->next->center), 0.5);
 			self->temp_target.y -= 2000;
 			self->velocity = vec3(0, 0, 0);
+			self->thrust = vec3(0, 0, 0);
+			self->thrust_mag = 0;
 		}
 
 		float brake = (self->brake_left + self->brake_right);
@@ -491,6 +493,7 @@ void ship_player_update_race(ship_t *self) {
 	self->angular_acceleration.x -= self->angular_velocity.x * 0.25 * 30;
 	// self->angular_acceleration.z += (self->angular_velocity.y - 0.5 * self->angular_velocity.z) * 30;
 	self->angular_acceleration.z += (self->angular_velocity.y - 0.5 * self->angular_velocity.z) * 16;
+	// self->angular_acceleration.z += ((0.03125 * self->angular_velocity.y) - (0.5 * self->angular_velocity.z)) * 30; // doesn't look right
 
 	// Orientation
 	if (self->angular_acceleration.y == 0) {

@@ -103,6 +103,7 @@ static void page_main_draw(menu_t *menu, int data) {
 }
 
 static void page_main_init(menu_t *menu) {
+	render_set_projection_fov(73.75); // init fov
 	menu_page_t *page = menu_push(menu, "OPTIONS", page_main_draw);
 	flags_add(page->layout_flags, MENU_FIXED);
 	page->title_pos = vec2i(0, 30);
@@ -307,8 +308,7 @@ static void toggle_internal_roll(menu_t *menu, int data) {
 }
 
 static void toggle_fov(menu_t *menu, int data) {
-	float fov = (data!=2) ? ((float)data * 10) + 50 : ((float)data * 10) + 53.75;
-	render_set_projection_fov(fov);
+	float fov = (data!=2) ? ((float)data * 10) + 50 : ((float)data * 10) + 53.75; // 73.75 is the default
 	save.fov = fov;
 	// printf("fov set to: %f\n", save.fov);
 	save.is_dirty = true;

@@ -61,6 +61,9 @@
 #define SHIP_TRACK_MAGNET	64 // 64
 #define SHIP_TRACK_FLOAT 	256
 
+#define NUM_SHIP_TRAIL_POINTS 	12
+
+
 #define SHIP_PITCH_ACCEL    NTSC_ACCELERATION(ANGLE_NORM_TO_RADIAN(FIXED_TO_FLOAT(PITCH_VELOCITY(30))))
 #define SHIP_THRUST_RATE    NTSC_VELOCITY(16) //16
 #define SHIP_THRUST_FALLOFF NTSC_VELOCITY(8)
@@ -131,7 +134,7 @@ typedef struct ship_t {
 	float update_timer;
 	float last_impact_time;
 
-	// Rumble Control Attributes (FIXME)
+	// Rumble Control Attributes
 	float last_boost_rumble;
 
 	mat4_t mat;
@@ -154,6 +157,16 @@ typedef struct ship_t {
 	sfx_t *sfx_engine_intake;
 	sfx_t *sfx_turbulence;
 	sfx_t *sfx_shield;
+
+	// Trail
+	float trail_last_incremented;
+	uint8_t trail_buffer_loc;
+	struct {
+		vertex_t left;
+		vertex_t center;
+		vertex_t right;
+	} trail_buffer[NUM_SHIP_TRAIL_POINTS];
+
 } ship_t;
 
 void ships_load(void);
@@ -168,6 +181,12 @@ void ship_reset_exhaust_plume(ship_t *self);
 void ship_draw(ship_t *self);
 void ship_draw_shadow(ship_t *self);
 void ship_draw_flare(ship_t *self);
+void ship_draw_flare_psx(ship_t *self);
+
+void ship_draw_player_trail(ship_t *self);
+void ship_draw_trail(ship_t *self);
+void ship_update_trail(ship_t *self);
+
 void ship_update(ship_t *self);
 void ship_update_unit_vectors(ship_t *self);
 void ship_collide_with_track(ship_t *self, track_face_t *face);

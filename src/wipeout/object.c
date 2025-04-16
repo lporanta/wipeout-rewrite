@@ -21,7 +21,7 @@ Object *objects_load(char *name, texture_list_t tl) {
 	if (!bytes) {
 		die("Failed to load file %s\n", name);
 	}
-	printf("load: %s\n", name);
+	// printf("load: %s\n", name);
 
 	Object *objectList = mem_mark();
 	Object *prevObject = NULL;

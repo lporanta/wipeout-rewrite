@@ -52,7 +52,6 @@ vec3_t ship_ai_strat_hold_right(ship_t *self, track_face_t *face) {
 	return vec3_mulf(vec3_sub(fv1, fv2), 0.5);
 }
 
-
 vec3_t ship_ai_strat_hold_center(ship_t *self, track_face_t *face) {
 	return vec3(0, 0, 0);
 }
@@ -75,8 +74,6 @@ vec3_t ship_ai_strat_avoid(ship_t *self, track_face_t *face) {
 		return ship_ai_strat_hold_left(self, face);
 	}
 }
-
-
 
 vec3_t ship_ai_strat_avoid_other(ship_t *self, track_face_t *face) {
 	int min_section_num = 100;
@@ -103,8 +100,6 @@ vec3_t ship_ai_strat_avoid_other(ship_t *self, track_face_t *face) {
 	return vec3(0, 0, 0);
 }
 
-
-
 vec3_t ship_ai_strat_zig_zag(ship_t *self, track_face_t *face) {
 	int update_count = (self->update_timer * 30)/50;
 	if (update_count % 2) {
@@ -114,7 +109,6 @@ vec3_t ship_ai_strat_zig_zag(ship_t *self, track_face_t *face) {
 		return ship_ai_strat_hold_left(self, face);
 	}
 }
-
 
 void ship_ai_update_race(ship_t *self) {
 	vec3_t offset_vector = vec3(0, 0, 0);
@@ -161,7 +155,6 @@ void ship_ai_update_race(ship_t *self) {
 				}
 			}
 
-
 			// Ship has been left WELL BEHIND; set it to avoid
 			// other ships and update its speed as normal
 
@@ -176,7 +169,6 @@ void ship_ai_update_race(ship_t *self) {
 					self->speed += self->remote_thrust_mag * 30 * system_tick();
 				}
 			}
-
 
 			// Ship is JUST AHEAD
 
@@ -228,7 +220,6 @@ void ship_ai_update_race(ship_t *self) {
 				}
 
 			}
-
 			
 			// Ship is JUST BEHIND; we must decided if and how many times it 'should have a go back'
 
@@ -309,7 +300,6 @@ void ship_ai_update_race(ship_t *self) {
 				}
 			}
 
-
 			// Ship is WELL AHEAD; we must slow the opponent to
 			// give the weaker player a chance to catch up
 			
@@ -323,7 +313,6 @@ void ship_ai_update_race(ship_t *self) {
 				self->update_strat_func = ship_ai_strat_hold_center;
 			}
 
-
 			// Ship is TOO FAR AHEAD
 
 			else if (section_diff >= 150) { // Ship too far ahead, let it continue
@@ -334,7 +323,6 @@ void ship_ai_update_race(ship_t *self) {
 					self->speed += self->remote_thrust_mag * 30 * system_tick();
 				}
 			}
-
 
 			// Ship is IN SIGHT
 
@@ -359,7 +347,6 @@ void ship_ai_update_race(ship_t *self) {
 				}
 			} // End of DPA control options
 
-
 			// Ship is JUST OUT OF SIGHT
 
 			else {
@@ -375,7 +362,6 @@ void ship_ai_update_race(ship_t *self) {
 			self->update_strat_func = ship_ai_strat_hold_center;
 		}
 		offset_vector = (self->update_strat_func)(self, face);
-
 
 		// Make decision as to which path the craft will take at a junction
 
@@ -419,8 +405,6 @@ void ship_ai_update_race(ship_t *self) {
 		}
 		section_t *next = section->next;
 		section = self->section;
-
-
 
 
 		// General routines - Non decision based
@@ -478,7 +462,6 @@ void ship_ai_update_race(ship_t *self) {
 		self->angular_velocity.y = (wrap_angle(-atan2(track_target.x, track_target.z) - self->angle.y) * (1.0/16.0)) * 30 + self->turn_rate_from_hit;
 	}
 
-
 	// Ship is SHIP_FLYING
 
 	else {
@@ -512,7 +495,6 @@ void ship_ai_update_race(ship_t *self) {
 		self->angular_velocity.x = -0.3 - self->angle.x * 30;
 		self->angular_velocity.y = wrap_angle(-atan2(track_target.x, track_target.z) - self->angle.y) * (1.0/16.0) * 30;
 	}
-
 	
 	self->angular_velocity.z += (self->angular_velocity.y * 2.0 - self->angular_velocity.z * 0.5) * 30 * system_tick();
 	self->turn_rate_from_hit -= self->turn_rate_from_hit * 0.125 * 30 * system_tick();

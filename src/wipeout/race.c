@@ -105,7 +105,6 @@ void race_update(void) {
 		}
 	}
 
-
 	// Draw 3D
 	render_set_view(g.camera.position, g.camera.angle);
 
@@ -143,6 +142,7 @@ void race_start(void) {
 	scene_init();
 	camera_init(&g.camera, g.track.sections);
 	g.camera.update_func = camera_update_race_intro;
+	render_set_projection_fov(save.fov);
 	ships_init(g.track.sections);
 	droid_init(&g.droid, &g.ships[g.pilot]);
 	particles_init();

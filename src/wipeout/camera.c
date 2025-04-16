@@ -193,7 +193,6 @@ void camera_update_rescue(camera_t *camera, ship_t *ship, droid_t *droid) {
 	camera->angle.y = -atan2(target.x, target.z);
 }
 
-
 void camera_update_attract_internal(camera_t *camera, ship_t *ship, droid_t *droid) {
 	camera->update_timer -= system_tick();
 	if (camera->update_timer <= 0) {
